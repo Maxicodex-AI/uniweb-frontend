@@ -257,7 +257,7 @@ function StatsBar() {
             marginTop: 10,
           }}>
             <div style={{ width: 32, height: 2, background: '#16a34a', borderRadius: 999 }} />
-            <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 600 }}>ESTABLISHED 2024</span>
+            <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 600 }}>ESTABLISHED 2026</span>
             <div style={{ width: 32, height: 2, background: '#16a34a', borderRadius: 999 }} />
           </div>
         </div>
