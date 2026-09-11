@@ -494,7 +494,7 @@ const LEARNING_TYPE_CONFIG: Record<string, {
     border: '#bfdbfe',
     description: 'Your learning hub is tailored for engineering — code, circuits, problem solving and technical design.',
     tools: [
-      { icon: '💻', label: 'Code Sandbox', desc: 'Write and run code', href: '/learning-hub' },
+      { icon: '💻', label: 'Code Sandbox', desc: 'Write and run code', href: '/learning-hub/tools/sandbox' },
       { icon: '⚡', label: 'Circuit Designer', desc: 'Design and simulate circuits', href: '/learning-hub/tools/circuits' },
       { icon: '📐', label: 'Engineering Calc', desc: 'Technical calculations', href: '/learning-hub/tools/calc' },
       { icon: '🔧', label: 'Problem Sets', desc: 'Engineering problem practice', href: '/learning-hub/tools/problems' },
@@ -676,7 +676,7 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
       icon: '⚙️', label: 'Engineering & Technology', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe',
       description: 'Code, circuits, problem solving and technical design.',
       tools: [
-        { icon: '💻', label: 'Code Sandbox', desc: 'Write and run code', href: '/learning-hub', available: true },
+        { icon: '💻', label: 'Code Sandbox', desc: 'Write and run code', href: '/learning-hub/tools/sandbox', available: true },
         { icon: '⚡', label: 'Circuit Designer', desc: 'Design circuits', href: '/learning-hub/tools/circuits', available: false },
         { icon: '📐', label: 'Engineering Calc', desc: 'Technical calculations', href: '/learning-hub/tools/calc', available: false },
         { icon: '🔧', label: 'Problem Sets', desc: 'Engineering practice', href: '/learning-hub/tools/problems', available: false },
@@ -738,7 +738,7 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
       icon: '📚', label: 'General Studies', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0',
       description: 'Standard learning hub with notes, quizzes and sandbox.',
       tools: [
-        { icon: '💻', label: 'Code Sandbox', desc: 'Write and run code', href: '/learning-hub', available: true },
+        { icon: '💻', label: 'Code Sandbox', desc: 'Write and run code', href: '/learning-hub/tools/sandbox', available: true },
         { icon: '📄', label: 'Lesson Notes', desc: 'Read course notes', href: '/learning-hub', available: true },
         { icon: '✅', label: 'Quizzes', desc: 'Test your knowledge', href: '/learning-hub', available: true },
         { icon: '🎥', label: 'Video Resources', desc: 'Watch learning videos', href: '/learning-hub', available: true },

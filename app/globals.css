@@ -964,14 +964,6 @@ h3 { font-size: 16px; font-weight: 600; color: var(--gray-800); }
   }
 }
 
-/* ===== SIDEBAR OVERLAY ===== */
-@media (max-width: 768px) {
-
-  .sidebar-overlay {
-    display: block !important;
-  }
-}
-
 /* ===== BOTTOM SAFE AREA (iPhone) ===== */
 @media (max-width: 768px) {
 

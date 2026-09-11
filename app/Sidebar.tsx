@@ -62,14 +62,32 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { href: '/chat', icon: '💬', label: 'Chat', badge: 0 },
     { href: '/live', icon: '📡', label: 'Live Classes' },
     { href: '/learning-hub', icon: '🎓', label: 'Learning Hub', isNew: true },
-    { href: '/learning-hub/tools/sandbox', icon: '💻', label: 'Code Sandbox' },
+    ...(user?.department && [
+      'Computer Science',
+      'Computer Science with Statistics',
+      'Statistics',
+      'Mathematics',
+      'Physics and Astronomy',
+      'Electronic Engineering',
+      'Electrical Engineering',
+      'Mechanical Engineering',
+      'Civil Engineering',
+      'Biomedical Engineering',
+      'Mechatronic Engineering',
+      'Metallurgical and Materials Engineering',
+      'Agricultural and Bioresources Engineering',
+      'Computer Education',
+      'Science Laboratory Technology',
+    ].includes(user.department) ? [
+      { href: '/learning-hub/tools/sandbox', icon: '💻', label: 'Code Sandbox' },
+    ] : []),
     ...(user?.role === 'lecturer' || user?.role === 'faculty_admin' || user?.role === 'department_admin' ? [
       { href: '/learning-hub/create-lesson', icon: '✏️', label: 'Create Lesson' },
     ] : []),
     ...(user?.role === 'faculty_admin' || user?.role === 'admin' || user?.role === 'department_admin' ? [
       { href: '/learning-hub/review', icon: '📋', label: 'Review Queue' },
     ] : []),
-    { href: '/intranet', icon: '🌐', label: 'Intranet' },
+        { href: '/intranet', icon: '🌐', label: 'Intranet' },
     { href: '/announcements', icon: '📢', label: 'Announcements', badge: 0 },
   ]
 
