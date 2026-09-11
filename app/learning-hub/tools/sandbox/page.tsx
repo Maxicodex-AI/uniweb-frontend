@@ -160,29 +160,66 @@ export default function CodeSandbox() {
     setActiveTab('editor')
   }
 
-  const runCode = async () => {
+    const runCode = async () => {
     setRunning(true)
     setOutput('⏳ Running your code...')
     try {
+      // First get available runtimes to find correct version
+      const langMap: Record<string, { language: string; version: string }> = {
+        python: { language: 'python', version: '3.10.0' },
+        javascript: { language: 'javascript', version: '18.15.0' },
+        c: { language: 'c', version: '10.2.0' },
+        cpp: { language: 'c++', version: '10.2.0' },
+        java: { language: 'java', version: '15.0.2' },
+        typescript: { language: 'typescript', version: '5.0.3' },
+      }
+
+      const langInfo = langMap[language.value] || langMap.python
+
       const res = await fetch('https://emkc.org/api/v2/piston/execute', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          language: language.value,
-          version: language.version,
+          language: langInfo.language,
+          version: langInfo.version,
           files: [{
             name: `main.${language.ext}`,
             content: code,
           }],
+          stdin: '',
+          args: [],
+          compile_timeout: 10000,
+          run_timeout: 5000,
         }),
       })
+
+      if (!res.ok) {
+        const errText = await res.text()
+        setOutput(`❌ API Error ${res.status}: ${errText}`)
+        return
+      }
+
       const data = await res.json()
+      console.log('Piston response:', data)
+
       const stdout = data.run?.stdout || ''
       const stderr = data.run?.stderr || ''
-      const result = stdout + (stderr ? `\n⚠️ Errors:\n${stderr}` : '')
-      setOutput(result || '✅ Code ran with no output.')
+      const compileErr = data.compile?.stderr || ''
+
+      if (compileErr) {
+        setOutput(`❌ Compilation Error:\n${compileErr}`)
+      } else if (stderr) {
+        setOutput(`⚠️ Runtime Error:\n${stderr}`)
+      } else if (stdout) {
+        setOutput(stdout)
+      } else {
+        setOutput('✅ Code ran successfully with no output.\n\nHint: Use print() or console.log() to see output.')
+      }
     } catch (err) {
-      setOutput('❌ Connection error. Check your internet and try again.')
+      console.error('Piston error:', err)
+      setOutput('❌ Connection error. The code execution service may be temporarily unavailable. Try again.')
     } finally {
       setRunning(false)
     }

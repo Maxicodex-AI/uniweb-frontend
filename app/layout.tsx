@@ -22,7 +22,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
+            <head>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            const theme = localStorage.getItem('uniweb-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+          `
+        }} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
           name="apple-mobile-web-app-status-bar-style"

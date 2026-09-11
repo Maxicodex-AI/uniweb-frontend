@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import NotificationBell from './NotificationBell'
-import { getAuthToken } from './utils/auth'
+import { getAuthToken, removeAuthToken } from './utils/auth'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
@@ -37,6 +37,8 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
   const [showResults, setShowResults] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
   const token = getAuthToken()
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [user, setUser] = useState<any>(null)
 
   const publicPages = ['/', '/login', '/register']
   const title = pageTitles[pathname] ||
@@ -52,6 +54,28 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+    // Fetch current user
+  useEffect(() => {
+    if (!token) return
+    fetch(`${API_BASE}/api/users/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => data && setUser(data))
+      .catch(() => {})
+  }, [])
+
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      setShowProfileMenu(false)
+    }
+    if (showProfileMenu) {
+      document.addEventListener('click', handleClick)
+      return () => document.removeEventListener('click', handleClick)
+    }
+  }, [showProfileMenu])
 
   // Debounced search
   useEffect(() => {
@@ -346,7 +370,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
         >
           📅
         </button>
-        <button
+                       <button
           onClick={() => router.push('/settings')}
           style={{
             width: 36, height: 36, borderRadius: 8,
@@ -358,6 +382,59 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
         >
           ⚙️
         </button>
+
+        {/* Mobile profile/logout */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: user?.avatarColor || '#16a34a',
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'white', fontSize: 13, fontWeight: 800,
+            }}
+          >
+            {user?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || '?'}
+          </button>
+
+          {showProfileMenu && (
+            <div style={{
+              position: 'absolute', right: 0, top: 44,
+              background: 'white', borderRadius: 12,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+              border: '1px solid #e5e7eb', zIndex: 1000,
+              minWidth: 180, overflow: 'hidden',
+            }}>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#1f2937' }}>{user?.name}</div>
+                <div style={{ fontSize: 11, color: '#9ca3af' }}>{user?.role}</div>
+              </div>
+              {[
+                { icon: '👤', label: 'Profile', href: '/profile' },
+                { icon: '⚙️', label: 'Settings', href: '/settings' },
+              ].map(item => (
+                <div key={item.label} onClick={() => { router.push(item.href); setShowProfileMenu(false) }} style={{
+                  padding: '10px 16px', cursor: 'pointer', fontSize: 13,
+                  display: 'flex', alignItems: 'center', gap: 10, color: '#374151',
+                  transition: 'background 0.1s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <span>{item.icon}</span>{item.label}
+                </div>
+              ))}
+              <div onClick={() => { removeAuthToken(); router.push('/login') }} style={{
+                padding: '10px 16px', cursor: 'pointer', fontSize: 13,
+                display: 'flex', alignItems: 'center', gap: 10, color: '#dc2626',
+                borderTop: '1px solid #f3f4f6',
+              }}>
+                <span>🚪</span> Logout
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

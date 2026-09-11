@@ -16,7 +16,8 @@ export default function SettingsPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'password' | 'account'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'password' | 'account' | 'appearance'>('profile')
+  const [darkMode, setDarkMode] = useState(false)
 
   // Profile
   const [name, setName] = useState('')
@@ -245,6 +246,7 @@ export default function SettingsPage() {
             {[
               { key: 'profile', label: '👤 Profile' },
               { key: 'notifications', label: '🔔 Notifications' },
+              { key: 'appearance', label: '🎨 Appearance' },
               { key: 'password', label: '🔑 Password' },
               { key: 'account', label: '📋 Account Info' },
             ].map(tab => (
@@ -458,6 +460,51 @@ export default function SettingsPage() {
                 >
                   {notifSaving ? 'Saving...' : '✓ Save Preferences'}
                 </button>
+              </div>
+            )}
+
+            {/* APPEARANCE TAB */}
+            {activeTab === 'appearance' && (
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Appearance</h2>
+                <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 24 }}>
+                  Customise how UniWeb looks for you.
+                </p>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid #f3f4f6' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                      🌙
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#1f2937', marginBottom: 2 }}>Dark Mode</div>
+                      <div style={{ fontSize: 12, color: '#9ca3af' }}>Easier on the eyes at night</div>
+                    </div>
+                  </div>
+                  <div
+                    onClick={() => {
+                      const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+                      document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark')
+                      localStorage.setItem('uniweb-theme', isDark ? 'light' : 'dark')
+                      setDarkMode(!isDark)
+                    }}
+                    style={{
+                      width: 48, height: 26, borderRadius: 999,
+                      background: darkMode ? '#16a34a' : '#e5e7eb',
+                      cursor: 'pointer', position: 'relative',
+                      transition: 'background 0.2s', flexShrink: 0,
+                    }}
+                  >
+                    <div style={{
+                      position: 'absolute', top: 3,
+                      left: darkMode ? 25 : 3,
+                      width: 20, height: 20, borderRadius: '50%',
+                      background: 'white',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                      transition: 'left 0.2s',
+                    }} />
+                  </div>
+                </div>
               </div>
             )}
 
