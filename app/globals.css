@@ -994,56 +994,21 @@ h3 { font-size: 16px; font-weight: 600; color: var(--gray-800); }
 
 /* ===== DARK MODE ===== */
 [data-theme='dark'] {
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-card: #1e293b;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --border-color: #334155;
-  --sidebar-bg: #020617;
-  --topbar-bg: #0f172a;
+  color-scheme: dark;
 }
 
 [data-theme='dark'] body {
   background: #0f172a !important;
-  color: #f1f5f9 !important;
+  color: #e2e8f0 !important;
 }
 
 [data-theme='dark'] .topbar {
-  background: #0f172a !important;
+  background: #1e293b !important;
   border-bottom: 1px solid #334155 !important;
 }
 
 [data-theme='dark'] .sidebar {
   background: #020617 !important;
-}
-
-[data-theme='dark'] .card,
-[data-theme='dark'] [style*="background: white"],
-[data-theme='dark'] [style*="background: #fff"],
-[data-theme='dark'] [style*="background: #f9fafb"],
-[data-theme='dark'] [style*="background: #f8fafc"] {
-  background: #1e293b !important;
-  color: #f1f5f9 !important;
-  border-color: #334155 !important;
-}
-
-[data-theme='dark'] input,
-[data-theme='dark'] textarea,
-[data-theme='dark'] select {
-  background: #0f172a !important;
-  color: #f1f5f9 !important;
-  border-color: #334155 !important;
-}
-
-[data-theme='dark'] p,
-[data-theme='dark'] h1,
-[data-theme='dark'] h2,
-[data-theme='dark'] h3,
-[data-theme='dark'] h4,
-[data-theme='dark'] span,
-[data-theme='dark'] label {
-  color: #f1f5f9 !important;
 }
 
 [data-theme='dark'] .search-bar {
@@ -1052,5 +1017,14 @@ h3 { font-size: 16px; font-weight: 600; color: var(--gray-800); }
 }
 
 [data-theme='dark'] .search-bar input {
-  color: #f1f5f9 !important;
+  background: transparent !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme='dark'] input,
+[data-theme='dark'] textarea,
+[data-theme='dark'] select {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
 }
