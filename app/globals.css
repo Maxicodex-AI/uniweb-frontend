@@ -993,22 +993,31 @@ h3 { font-size: 16px; font-weight: 600; color: var(--gray-800); }
 }
 
 /* ===== DARK MODE ===== */
-[data-theme='dark'] {
-  color-scheme: dark;
-}
-
 [data-theme='dark'] body {
   background: #0f172a !important;
   color: #e2e8f0 !important;
 }
 
-[data-theme='dark'] .topbar {
-  background: #1e293b !important;
-  border-bottom: 1px solid #334155 !important;
-}
-
+/* Sidebar */
 [data-theme='dark'] .sidebar {
   background: #020617 !important;
+  border-right: 1px solid #1e293b !important;
+}
+
+[data-theme='dark'] .sidebar-item {
+  color: #94a3b8 !important;
+}
+
+[data-theme='dark'] .sidebar-item:hover,
+[data-theme='dark'] .sidebar-item.active {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+/* Topbar */
+[data-theme='dark'] .topbar {
+  background: #0f172a !important;
+  border-bottom: 1px solid #1e293b !important;
 }
 
 [data-theme='dark'] .search-bar {
@@ -1021,10 +1030,64 @@ h3 { font-size: 16px; font-weight: 600; color: var(--gray-800); }
   color: #e2e8f0 !important;
 }
 
+/* All white/light backgrounds → dark */
+[data-theme='dark'] .page,
+[data-theme='dark'] main {
+  background: #0f172a !important;
+}
+
+/* Cards */
+[data-theme='dark'] .card {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Inputs */
 [data-theme='dark'] input,
 [data-theme='dark'] textarea,
 [data-theme='dark'] select {
   background: #1e293b !important;
   color: #e2e8f0 !important;
   border-color: #334155 !important;
+}
+
+[data-theme='dark'] input::placeholder,
+[data-theme='dark'] textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Bottom tabs */
+[data-theme='dark'] .bottom-tabs {
+  background: #0f172a !important;
+  border-top: 1px solid #1e293b !important;
+}
+
+/* Alerts */
+[data-theme='dark'] .alert-success {
+  background: #052e16 !important;
+  border-color: #166534 !important;
+  color: #86efac !important;
+}
+
+[data-theme='dark'] .alert-error {
+  background: #450a0a !important;
+  border-color: #991b1b !important;
+  color: #fca5a5 !important;
+}
+
+/* Tables */
+[data-theme='dark'] table {
+  color: #e2e8f0 !important;
+}
+
+[data-theme='dark'] th {
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+  border-color: #334155 !important;
+}
+
+[data-theme='dark'] td {
+  border-color: #1e293b !important;
+  color: #e2e8f0 !important;
 }

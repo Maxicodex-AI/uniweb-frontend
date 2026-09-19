@@ -1149,12 +1149,13 @@ function StaffHub({ user, enrollments, availableCourses, streak, getCourseColor,
 function EnrollButton({ courseId, color }: { courseId: string; color: string }) {
   const [enrolling, setEnrolling] = useState(false)
   const [enrolled, setEnrolled] = useState(false)
-  const router = useRouter()
+  const [error, setError] = useState('')
+  const token = getAuthToken()
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
-  const handleEnroll = async () => {
+  const enroll = async () => {
     setEnrolling(true)
-    const token = getAuthToken()
-    if (!token) return
+    setError('')
     try {
       const res = await fetch(`${API_BASE}/api/courses/${courseId}/enroll`, {
         method: 'POST',
@@ -1162,33 +1163,39 @@ function EnrollButton({ courseId, color }: { courseId: string; color: string }) 
       })
       if (res.ok) {
         setEnrolled(true)
-        setTimeout(() => router.push(`/learning-hub/course/${courseId}`), 1000)
+        setTimeout(() => window.location.reload(), 1000)
+      } else {
+        const data = await res.json()
+        setError(data.message || 'Failed to enroll')
       }
     } catch (err) {
-      console.error(err)
+      setError('Connection error')
     } finally {
       setEnrolling(false)
     }
   }
 
   if (enrolled) return (
-    <div style={{ textAlign: 'center', color: '#16a34a', fontWeight: 600, fontSize: 14 }}>
-      ✅ Enrolled! Redirecting...
+    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#16a34a', fontWeight: 700, textAlign: 'center' }}>
+      ✅ Enrolled! Loading...
     </div>
   )
 
   return (
-    <button
-      onClick={handleEnroll}
-      disabled={enrolling}
-      style={{
-        width: '100%', padding: '10px',
-        background: color, color: 'white',
-        border: 'none', borderRadius: 8,
-        cursor: 'pointer', fontWeight: 700, fontSize: 14,
-      }}
-    >
-      {enrolling ? 'Enrolling...' : 'Enroll Now →'}
-    </button>
+    <div>
+      <button
+        onClick={enroll}
+        disabled={enrolling}
+        style={{
+          width: '100%', padding: '10px', borderRadius: 8, border: 'none',
+          background: enrolling ? '#9ca3af' : color,
+          color: 'white', cursor: enrolling ? 'not-allowed' : 'pointer',
+          fontWeight: 700, fontSize: 13,
+        }}
+      >
+        {enrolling ? 'Enrolling...' : 'Enroll Now →'}
+      </button>
+      {error && <div style={{ fontSize: 12, color: '#dc2626', marginTop: 6 }}>{error}</div>}
+    </div>
   )
 }

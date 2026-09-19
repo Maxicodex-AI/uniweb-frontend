@@ -73,9 +73,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       'Electrical Engineering',
       'Mechanical Engineering',
       'Civil Engineering',
-      //'Biomedical Engineering',
-      //'Mechatronic Engineering',
-      //'Metallurgical and Materials Engineering',
       'Agricultural and Bioresources Engineering',
       'Computer Education',
       'Science Laboratory Technology',
@@ -88,7 +85,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     ...(user?.role === 'faculty_admin' || user?.role === 'admin' || user?.role === 'department_admin' ? [
       { href: '/learning-hub/review', icon: '📋', label: 'Review Queue' },
     ] : []),
-        { href: '/intranet', icon: '🌐', label: 'Intranet' },
+    { href: '/intranet', icon: '🌐', label: 'Intranet' },
     { href: '/announcements', icon: '📢', label: 'Announcements', badge: 0 },
   ]
 
@@ -103,13 +100,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   ] : user?.role === 'faculty_admin' ? [
     { href: '/faculty-admin', icon: '🛡️', label: 'Faculty Panel' },
   ] : user?.role === 'department_admin' ? [
-    { href: '/dept-admin', icon: '🏛️', label: 'Dept Panel' },
+    { href: '/dept-admin', icon: '🏛️', label: 'Department Panel' },
   ] : []
 
   const bottomItems = [
-  { href: '/settings', icon: '⚙️', label: 'Settings' },
-  { href: '/profile', icon: '👤', label: 'Profile' },
-]
+    { href: '/settings', icon: '⚙️', label: 'Settings' },
+    { href: '/profile', icon: '👤', label: 'Profile' },
+  ]
 
   // Don't show sidebar on public pages
   const publicPages = ['/', '/login', '/register']
