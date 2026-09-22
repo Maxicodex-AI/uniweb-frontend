@@ -29,15 +29,20 @@ const ThemeContext = createContext<ThemeContextType>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [isDark, setIsDark] = useState(false)
 
+  // Apply the saved theme as soon as the component mounts, and set
+  // data-theme on <html> so the CSS in globals.css actually activates.
   useEffect(() => {
     const saved = localStorage.getItem('uniweb-theme')
-    if (saved === 'dark') setIsDark(true)
+    const shouldBeDark = saved === 'dark'
+    setIsDark(shouldBeDark)
+    document.documentElement.setAttribute('data-theme', shouldBeDark ? 'dark' : 'light')
   }, [])
 
   const toggleDark = () => {
     const next = !isDark
     setIsDark(next)
     localStorage.setItem('uniweb-theme', next ? 'dark' : 'light')
+    document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light')
   }
 
   const light = {

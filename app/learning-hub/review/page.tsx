@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAuthToken } from '../../utils/auth'
+import { useTheme } from '../../context/ThemeContext' // adjust path to match your project structure
 
 interface Lesson {
   _id: string
@@ -22,6 +23,8 @@ interface Lesson {
 
 export default function ReviewQueuePage() {
   const router = useRouter()
+  const { bg, bgCard, text, textSecondary, border, inputBg, isDark } = useTheme()
+
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -116,14 +119,14 @@ export default function ReviewQueuePage() {
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 60px)' }}>
-      <p style={{ color: '#4b5563' }}>Loading review queue...</p>
+      <p style={{ color: textSecondary }}>Loading review queue...</p>
     </div>
   )
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: 'calc(100vh - 60px)' }}>
+    <div style={{ background: bg, minHeight: 'calc(100vh - 60px)' }}>
 
-      {/* Header */}
+      {/* Header — kept as a fixed purple gradient; it's an intentional accent, not a themed surface */}
       <div style={{
         background: 'linear-gradient(135deg, #1e1b4b, #3730a3)',
         padding: '32px 24px 60px',
@@ -146,12 +149,12 @@ export default function ReviewQueuePage() {
         <div>
           {lessons.length === 0 ? (
             <div style={{
-              background: 'white', borderRadius: 16, padding: '48px 24px',
+              background: bgCard, borderRadius: 16, padding: '48px 24px',
               textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
             }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
-              <h3 style={{ marginBottom: 8 }}>All caught up!</h3>
-              <p style={{ color: '#6b7280' }}>No lessons pending review right now.</p>
+              <h3 style={{ marginBottom: 8, color: text }}>All caught up!</h3>
+              <p style={{ color: textSecondary }}>No lessons pending review right now.</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -160,7 +163,7 @@ export default function ReviewQueuePage() {
                   key={lesson._id}
                   onClick={() => { setSelectedLesson(lesson); setReviewNotes(''); setScheduledFor('') }}
                   style={{
-                    background: 'white', borderRadius: 14,
+                    background: bgCard, borderRadius: 14,
                     padding: '18px 20px', cursor: 'pointer',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                     border: selectedLesson?._id === lesson._id ? '2px solid #7c3aed' : '2px solid transparent',
@@ -178,16 +181,17 @@ export default function ReviewQueuePage() {
                         {getInitials(lesson.uploadedBy?.name || '?')}
                       </div>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1f2937' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: text }}>
                           {lesson.uploadedBy?.name}
                         </div>
-                        <div style={{ fontSize: 11, color: '#9ca3af' }}>
+                        <div style={{ fontSize: 11, color: textSecondary }}>
                           {formatDate(lesson.createdAt)}
                         </div>
                       </div>
                     </div>
                     <span style={{
-                      background: '#fef3c7', color: '#92400e',
+                      background: isDark ? '#451a03' : '#fef3c7',
+                      color: isDark ? '#fbbf24' : '#92400e',
                       padding: '3px 10px', borderRadius: 999,
                       fontSize: 11, fontWeight: 600,
                     }}>
@@ -199,11 +203,11 @@ export default function ReviewQueuePage() {
                     <div style={{ fontSize: 11, color: '#7c3aed', fontWeight: 600, marginBottom: 2 }}>
                       {lesson.course?.code} — Week {lesson.weekNumber}
                     </div>
-                    <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1f2937', margin: 0 }}>
+                    <h3 style={{ fontSize: 15, fontWeight: 700, color: text, margin: 0 }}>
                       {lesson.title}
                     </h3>
                     {lesson.description && (
-                      <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4, lineHeight: 1.5 }}>
+                      <p style={{ fontSize: 13, color: textSecondary, marginTop: 4, lineHeight: 1.5 }}>
                         {lesson.description.slice(0, 100)}...
                       </p>
                     )}
@@ -211,19 +215,22 @@ export default function ReviewQueuePage() {
 
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <span style={{
-                      background: '#f0fdf4', color: '#15803d',
+                      background: isDark ? '#052e16' : '#f0fdf4',
+                      color: isDark ? '#86efac' : '#15803d',
                       padding: '2px 8px', borderRadius: 999, fontSize: 11,
                     }}>
                       {lesson.objectives?.length || 0} objectives
                     </span>
                     <span style={{
-                      background: '#eff6ff', color: '#2563eb',
+                      background: isDark ? '#172554' : '#eff6ff',
+                      color: isDark ? '#93c5fd' : '#2563eb',
                       padding: '2px 8px', borderRadius: 999, fontSize: 11,
                     }}>
                       {lesson.videoLinks?.length || 0} videos
                     </span>
                     <span style={{
-                      background: '#f5f3ff', color: '#7c3aed',
+                      background: isDark ? '#2e1065' : '#f5f3ff',
+                      color: isDark ? '#c4b5fd' : '#7c3aed',
                       padding: '2px 8px', borderRadius: 999, fontSize: 11,
                     }}>
                       {lesson.duration} days
@@ -239,11 +246,11 @@ export default function ReviewQueuePage() {
         {selectedLesson && (
           <div style={{ position: 'sticky', top: 80, alignSelf: 'start' }}>
             <div style={{
-              background: 'white', borderRadius: 16,
+              background: bgCard, borderRadius: 16,
               boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
               overflow: 'hidden',
             }}>
-              {/* Review header */}
+              {/* Review header — kept as a fixed purple gradient, matches the page header accent */}
               <div style={{
                 background: 'linear-gradient(135deg, #1e1b4b, #3730a3)',
                 padding: '20px 24px',
@@ -267,8 +274,8 @@ export default function ReviewQueuePage() {
               <div style={{ padding: 20 }}>
 
                 {/* Lesson details */}
-                <div style={{ background: '#f9fafb', borderRadius: 10, padding: 16, marginBottom: 16 }}>
-                  <h4 style={{ fontSize: 13, marginBottom: 10, color: '#374151' }}>Lesson Details</h4>
+                <div style={{ background: isDark ? '#0f172a' : '#f9fafb', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+                  <h4 style={{ fontSize: 13, marginBottom: 10, color: text }}>Lesson Details</h4>
                   {[
                     { label: 'Course', value: selectedLesson.course?.title },
                     { label: 'Week', value: `Week ${selectedLesson.weekNumber}` },
@@ -279,17 +286,17 @@ export default function ReviewQueuePage() {
                   ].map(item => (
                     <div key={item.label} style={{
                       display: 'flex', justifyContent: 'space-between',
-                      padding: '5px 0', borderBottom: '1px solid #e5e7eb',
+                      padding: '5px 0', borderBottom: `1px solid ${border}`,
                       fontSize: 12,
                     }}>
-                      <span style={{ color: '#9ca3af' }}>{item.label}</span>
-                      <span style={{ fontWeight: 600, color: '#1f2937' }}>{item.value}</span>
+                      <span style={{ color: textSecondary }}>{item.label}</span>
+                      <span style={{ fontWeight: 600, color: text }}>{item.value}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* Review notes */}
-                <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: text, display: 'block', marginBottom: 6 }}>
                   Review Notes (optional)
                 </label>
                 <textarea
@@ -299,21 +306,27 @@ export default function ReviewQueuePage() {
                   rows={3}
                   style={{
                     width: '100%', padding: '10px 12px',
-                    border: '1.5px solid #e5e7eb', borderRadius: 8,
+                    border: `1.5px solid ${border}`, borderRadius: 8,
                     fontSize: 13, resize: 'vertical', fontFamily: 'inherit',
                     outline: 'none', marginBottom: 16,
+                    background: inputBg, color: text,
                   }}
                 />
 
                 {/* Schedule publication */}
-                <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: text, display: 'block', marginBottom: 6 }}>
                   Schedule Publication (optional)
                 </label>
                 <input
                   type="datetime-local"
                   value={scheduledFor}
                   onChange={e => setScheduledFor(e.target.value)}
-                  style={{ marginBottom: 20 }}
+                  style={{
+                    marginBottom: 20,
+                    background: inputBg, color: text,
+                    border: `1.5px solid ${border}`, borderRadius: 8,
+                    padding: '10px 12px', fontSize: 13, width: '100%',
+                  }}
                 />
 
                 {message && (
@@ -325,7 +338,7 @@ export default function ReviewQueuePage() {
                   </div>
                 )}
 
-                {/* Action buttons */}
+                {/* Action buttons — status colors kept fixed on purpose (approve/reject meaning shouldn't shift with theme) */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <button
                     onClick={() => handleReview('approve')}
@@ -333,7 +346,8 @@ export default function ReviewQueuePage() {
                     style={{
                       width: '100%', padding: '12px', borderRadius: 10,
                       border: 'none', cursor: 'pointer',
-                      background: '#f0fdf4', color: '#15803d',
+                      background: isDark ? '#052e16' : '#f0fdf4',
+                      color: isDark ? '#86efac' : '#15803d',
                       fontWeight: 700, fontSize: 14,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                     }}
@@ -346,7 +360,8 @@ export default function ReviewQueuePage() {
                     style={{
                       width: '100%', padding: '12px', borderRadius: 10,
                       border: 'none', cursor: 'pointer',
-                      background: '#fffbeb', color: '#92400e',
+                      background: isDark ? '#451a03' : '#fffbeb',
+                      color: isDark ? '#fbbf24' : '#92400e',
                       fontWeight: 700, fontSize: 14,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                     }}
@@ -359,7 +374,8 @@ export default function ReviewQueuePage() {
                     style={{
                       width: '100%', padding: '12px', borderRadius: 10,
                       border: 'none', cursor: 'pointer',
-                      background: '#fef2f2', color: '#dc2626',
+                      background: isDark ? '#450a0a' : '#fef2f2',
+                      color: isDark ? '#fca5a5' : '#dc2626',
                       fontWeight: 700, fontSize: 14,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                     }}
