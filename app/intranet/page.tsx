@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { useTheme } from '../../context/ThemeContext' // adjust path to match your project structure
+import { useTheme } from '../context/ThemeContext' // adjust path to match your project structure
 
 const resources = [
   { icon: '🛒', title: 'Marketplace', desc: 'Buy, sell and connect with students', href: '#', color: '#16a34a', bg: '#f0fdf4', bgDark: '#052e16' },
