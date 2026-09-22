@@ -76,10 +76,8 @@ export default function AppShell({
         <Topbar onMenuClick={() => setSidebarOpen(true)} />
 
         <main
+          className="page-content"
           style={{
-            marginLeft: publicPages.includes(pathname) ? 0 : 240,
-            paddingTop: publicPages.includes(pathname) ? 0 : 60,
-            minHeight: '100vh',
             background: bg,
             transition: 'background 0.2s',
           }}
