@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getAuthToken, removeAuthToken } from './utils/auth'
+import { useTheme } from './context/ThemeContext'
 
 interface User {
   name: string
@@ -23,6 +24,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
+  const { isDark, bgCard, text, textSecondary, border } = useTheme()
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
   useEffect(() => {
@@ -121,7 +123,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         onClick={onClose}
       />
 
-      <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
+            <aside className={`sidebar ${isOpen ? 'open' : ''}`} style={{
+        background: isDark ? '#020617' : '#052e16',
+      }}>
 
         {/* Logo */}
         <div className="sidebar-logo">

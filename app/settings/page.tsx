@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAuthToken, removeAuthToken } from '../utils/auth'
+import { useTheme } from '../context/ThemeContext'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
@@ -17,7 +18,7 @@ export default function SettingsPage() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'password' | 'account' | 'appearance'>('profile')
-  const [darkMode, setDarkMode] = useState(false)
+  const { isDark, toggleDark, bgCard, bg, text, textSecondary, border } = useTheme()
 
   // Profile
   const [name, setName] = useState('')
@@ -172,7 +173,7 @@ export default function SettingsPage() {
   )
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: 'calc(100vh - 60px)' }}>
+    <div style={{ background: bg, minHeight: 'calc(100vh - 60px)' }}>
 
       {/* Header */}
       <div style={{
@@ -195,7 +196,7 @@ export default function SettingsPage() {
 
         {/* Profile card */}
         <div style={{
-          background: 'white', borderRadius: 16, padding: '20px 24px',
+          background: bgCard, borderRadius: 16, padding: '20px 24px',
           marginBottom: 20, boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
           display: 'flex', alignItems: 'center', gap: 16,
         }}>
@@ -208,8 +209,8 @@ export default function SettingsPage() {
             {getInitials(user?.name || '?')}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#1f2937' }}>{user?.name}</div>
-            <div style={{ fontSize: 13, color: '#6b7280' }}>{user?.email}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: text }}>{user?.name}</div>
+            <div style={{ fontSize: 13, color: textSecondary }}>{user?.email}</div>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               background: '#f0fdf4', border: '1px solid #bbf7d0',
@@ -233,14 +234,14 @@ export default function SettingsPage() {
 
         {/* Tabs + Content */}
         <div style={{
-          background: 'white', borderRadius: 16,
+          background: bgCard, borderRadius: 16,
           boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
           overflow: 'hidden',
         }}>
 
           {/* Tabs */}
           <div style={{
-            borderBottom: '1px solid #f3f4f6',
+            borderBottom: `1px solid ${border}`,
             display: 'flex', overflowX: 'auto',
           }}>
             {[
@@ -256,7 +257,7 @@ export default function SettingsPage() {
                 style={{
                   padding: '14px 20px', border: 'none', background: 'transparent',
                   borderBottom: activeTab === tab.key ? '2px solid #16a34a' : '2px solid transparent',
-                  color: activeTab === tab.key ? '#16a34a' : '#6b7280',
+                  color: activeTab === tab.key ? '#16a34a' : textSecondary,
                   fontWeight: activeTab === tab.key ? 700 : 400,
                   fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
                 }}
@@ -482,22 +483,17 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <div
-                    onClick={() => {
-                      const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
-                      document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark')
-                      localStorage.setItem('uniweb-theme', isDark ? 'light' : 'dark')
-                      setDarkMode(!isDark)
-                    }}
+                    onClick={toggleDark}
                     style={{
                       width: 48, height: 26, borderRadius: 999,
-                      background: darkMode ? '#16a34a' : '#e5e7eb',
+                      background: isDark ? '#16a34a' : '#e5e7eb',
                       cursor: 'pointer', position: 'relative',
                       transition: 'background 0.2s', flexShrink: 0,
                     }}
                   >
                     <div style={{
                       position: 'absolute', top: 3,
-                      left: darkMode ? 25 : 3,
+                      left: isDark ? 25 : 3,
                       width: 20, height: 20, borderRadius: '50%',
                       background: 'white',
                       boxShadow: '0 1px 4px rgba(0,0,0,0.2)',

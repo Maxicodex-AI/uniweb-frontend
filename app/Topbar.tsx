@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import NotificationBell from './NotificationBell'
 import { getAuthToken, removeAuthToken } from './utils/auth'
+import { useTheme } from './context/ThemeContext'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
@@ -39,6 +40,8 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
   const token = getAuthToken()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [user, setUser] = useState<any>(null)
+
+  const { isDark, bgCard, text, border, inputBg } = useTheme()
 
   const publicPages = ['/', '/login', '/register']
   const title = pageTitles[pathname] ||
@@ -127,8 +130,11 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
 
   if (publicPages.includes(pathname)) return null
 
-  return (
-    <div className="topbar">
+    return (
+    <div className="topbar" style={{
+      background: bgCard,
+      borderBottom: `1px solid ${border}`,
+    }}>
 
       {/* Hamburger — mobile only */}
       <button
@@ -145,11 +151,15 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
 
       {/* Search */}
       <div ref={searchRef} style={{ flex: 1, maxWidth: 480, position: 'relative' }}>
-        <div className="search-bar">
+                <div className="search-bar" style={{
+          background: isDark ? '#1e293b' : '#f9fafb',
+          border: `1px solid ${border}`,
+        }}>
           <span style={{ fontSize: 14, color: searching ? '#16a34a' : '#9ca3af' }}>
             {searching ? '⏳' : '🔍'}
           </span>
           <input
+            style={{ background: 'transparent', color: text }}
             placeholder={`Search courses, lessons, announcements...`}
             value={search}
             onChange={e => setSearch(e.target.value)}

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { SkeletonCourse } from '../components/Skeleton'
 import { getAuthToken } from '../utils/auth'
+import { useTheme } from '../context/ThemeContext'
 
 interface Course {
   _id: string
@@ -34,6 +35,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
 export default function LearningHubPage() {
   const router = useRouter()
+  const { isDark, bg, bgCard, text, textSecondary, border } = useTheme()
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [availableCourses, setAvailableCourses] = useState<Course[]>([])
   const [streak, setStreak] = useState<Streak | null>(null)
@@ -168,7 +170,7 @@ export default function LearningHubPage() {
           padding: 24,
         }}>
           <div style={{
-            background: 'white', borderRadius: 20,
+            background: bgCard, borderRadius: 20,
             width: '100%', maxWidth: 560,
             overflow: 'hidden',
             boxShadow: '0 24px 64px rgba(0,0,0,0.3)',
@@ -194,7 +196,7 @@ export default function LearningHubPage() {
                 <div style={{ textAlign: 'center', padding: '32px 0' }}>
                   <div style={{ fontSize: 48, marginBottom: 12 }}>📚</div>
                   <h3 style={{ marginBottom: 8 }}>No courses available yet</h3>
-                  <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 20 }}>
+                  <p style={{ color: textSecondary, fontSize: 14, marginBottom: 20 }}>
                     Your department admin hasn't added any courses yet. Check back later.
                   </p>
                   <button
@@ -206,7 +208,7 @@ export default function LearningHubPage() {
                 </div>
               ) : (
                 <>
-                  <p style={{ color: '#4b5563', fontSize: 14, marginBottom: 16 }}>
+                  <p style={{ color: textSecondary, fontSize: 14, marginBottom: 16 }}>
                     {selectedCourses.length} of {availableCourses.length} courses selected
                   </p>
 
@@ -224,15 +226,15 @@ export default function LearningHubPage() {
                           style={{
                             display: 'flex', alignItems: 'center', gap: 14,
                             padding: '14px 16px', borderRadius: 10, cursor: 'pointer',
-                            border: selected ? `2px solid ${color}` : '2px solid #e5e7eb',
-                            background: selected ? color + '10' : 'white',
+                            border: selected ? `2px solid ${color}` : `2px solid ${border}`,
+                            background: selected ? color + '10' : bgCard,
                             transition: 'all 0.15s',
                           }}
                         >
                           {/* Checkbox */}
                           <div style={{
                             width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                            background: selected ? color : 'white',
+                            background: selected ? color : bgCard,
                             border: selected ? `2px solid ${color}` : '2px solid #d1d5db',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                           }}>
@@ -254,11 +256,11 @@ export default function LearningHubPage() {
                                 </span>
                               )}
                             </div>
-                            <div style={{ fontSize: 14, fontWeight: 600, color: '#1f2937' }}>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: text }}>
                               {course.title}
                             </div>
                             {course.lecturers?.[0] && (
-                              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                              <div style={{ fontSize: 12, color: textSecondary, marginTop: 2 }}>
                                 👨‍🏫 {course.lecturers[0].name}
                               </div>
                             )}
@@ -273,8 +275,8 @@ export default function LearningHubPage() {
                       onClick={() => setShowOnboarding(false)}
                       style={{
                         flex: 1, padding: '12px', borderRadius: 10,
-                        border: '1px solid #e5e7eb', background: 'white',
-                        cursor: 'pointer', fontSize: 14, color: '#6b7280',
+                        border: `1px solid ${border}`, background: bgCard,
+                        cursor: 'pointer', fontSize: 14, color: textSecondary,
                       }}
                     >
                       Skip for now
@@ -299,7 +301,7 @@ export default function LearningHubPage() {
           </div>
         </div>
       )}
-    <div style={{ background: '#f8fafc', minHeight: 'calc(100vh - 60px)' }}>
+    <div style={{ background: bg, minHeight: 'calc(100vh - 60px)' }}>
       {/* ===== HERO ===== */}
       <div style={{
         background: 'linear-gradient(135deg, #052e16 0%, #14532d 50%, #166534 100%)',
@@ -540,6 +542,7 @@ const LEARNING_TYPE_CONFIG: Record<string, {
 }
 
 function LearningTypeBanner({ learningType, department }: { learningType: string; department: string }) {
+  const { bgCard, text, textSecondary } = useTheme()
   const config = LEARNING_TYPE_CONFIG[learningType] || LEARNING_TYPE_CONFIG.general_studies
   if (learningType === 'general_studies') return null
 
@@ -554,7 +557,7 @@ function LearningTypeBanner({ learningType, department }: { learningType: string
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
         <div style={{
           width: 44, height: 44, borderRadius: 10,
-          background: 'white', display: 'flex',
+          background: bgCard, display: 'flex',
           alignItems: 'center', justifyContent: 'center',
           fontSize: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
         }}>
@@ -564,13 +567,13 @@ function LearningTypeBanner({ learningType, department }: { learningType: string
           <div style={{ fontSize: 11, fontWeight: 700, color: config.color, marginBottom: 2 }}>
             {department.toUpperCase()} • LEARNING ENVIRONMENT
           </div>
-          <h3 style={{ fontSize: 15, fontWeight: 800, color: '#1f2937', margin: 0 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 800, color: text, margin: 0 }}>
             {config.label} Hub
           </h3>
         </div>
       </div>
 
-      <p style={{ fontSize: 13, color: '#4b5563', marginBottom: 16, lineHeight: 1.5 }}>
+      <p style={{ fontSize: 13, color: textSecondary, marginBottom: 16, lineHeight: 1.5 }}>
         {config.description}
       </p>
 
@@ -585,7 +588,7 @@ function LearningTypeBanner({ learningType, department }: { learningType: string
               <div
                 key={tool.label}
                 style={{
-                  background: 'white',
+                  background: bgCard,
                   border: `1px solid ${config.border}`,
                   borderRadius: 10, padding: '12px 14px',
                   cursor: 'pointer',
@@ -596,10 +599,10 @@ function LearningTypeBanner({ learningType, department }: { learningType: string
               >
                 <span style={{ fontSize: 20, flexShrink: 0 }}>{tool.icon}</span>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 2 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 2 }}>
                     {tool.label}
                   </div>
-                  <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.3 }}>
+                  <div style={{ fontSize: 11, color: textSecondary, lineHeight: 1.3 }}>
                     {tool.desc}
                   </div>
                 </div>
@@ -626,6 +629,7 @@ function LearningTypeBanner({ learningType, department }: { learningType: string
 // ===== STUDENT HUB =====
 function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCourses, getCourseColor, getInitials }: any) {
   const [activeSection, setActiveSection] = useState<'tools' | 'courses' | 'explore'>('tools')
+  const { bg, bgCard, text, textSecondary, border } = useTheme()
 
   const LEARNING_TYPE_CONFIG: Record<string, {
     icon: string; label: string; color: string; bg: string; border: string
@@ -762,7 +766,7 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
       }}>
         <div style={{
           width: 52, height: 52, borderRadius: 12,
-          background: 'white', display: 'flex',
+          background: bgCard, display: 'flex',
           alignItems: 'center', justifyContent: 'center',
           fontSize: 28, boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
           flexShrink: 0,
@@ -773,20 +777,20 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
           <div style={{ fontSize: 11, fontWeight: 700, color: config.color, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
             {user.department} • Learning Hub
           </div>
-          <h2 style={{ fontSize: 17, fontWeight: 800, color: '#1f2937', margin: 0 }}>
+          <h2 style={{ fontSize: 17, fontWeight: 800, color: text, margin: 0 }}>
             {config.label} Hub
           </h2>
-          <p style={{ fontSize: 12, color: '#6b7280', margin: '3px 0 0' }}>{config.description}</p>
+          <p style={{ fontSize: 12, color: textSecondary, margin: '3px 0 0' }}>{config.description}</p>
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{ fontSize: 20, fontWeight: 800, color: config.color }}>{enrollments.length}</div>
-          <div style={{ fontSize: 11, color: '#6b7280' }}>Enrolled</div>
+          <div style={{ fontSize: 11, color: textSecondary }}>Enrolled</div>
         </div>
       </div>
 
       {/* Section tabs */}
       <div style={{
-        background: 'white', borderRadius: 12,
+        background: bgCard, borderRadius: 12,
         display: 'flex', padding: 4, gap: 4,
         marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
       }}>
@@ -801,7 +805,7 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
             style={{
               flex: 1, padding: '10px', borderRadius: 8, border: 'none',
               background: activeSection === tab.key ? config.color : 'transparent',
-              color: activeSection === tab.key ? 'white' : '#6b7280',
+              color: activeSection === tab.key ? 'white' : textSecondary,
               cursor: 'pointer', fontSize: 13, fontWeight: 600,
               transition: 'all 0.15s',
             }}
@@ -820,8 +824,8 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
                 key={tool.label}
                 onClick={() => tool.available && (window.location.href = tool.href)}
                 style={{
-                  background: 'white', borderRadius: 14, padding: '20px 18px',
-                  border: tool.available ? `1px solid ${config.border}` : '1px solid #e5e7eb',
+                  background: bgCard, borderRadius: 14, padding: '20px 18px',
+                  border: tool.available ? `1px solid ${config.border}` : `1px solid ${border}`,
                   cursor: tool.available ? 'pointer' : 'default',
                   transition: 'all 0.15s', position: 'relative',
                   opacity: tool.available ? 1 : 0.7,
@@ -846,10 +850,10 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
                 }}>
                   {tool.icon}
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#1f2937', marginBottom: 4 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 4 }}>
                   {tool.label}
                 </div>
-                <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>
+                <div style={{ fontSize: 12, color: textSecondary, lineHeight: 1.4 }}>
                   {tool.desc}
                 </div>
                 {tool.available && (
@@ -878,12 +882,12 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
         <div>
           {enrollments.length === 0 ? (
             <div style={{
-              background: 'white', borderRadius: 16, padding: '40px 24px',
+              background: bgCard, borderRadius: 16, padding: '40px 24px',
               textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
             }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>📚</div>
               <h3 style={{ marginBottom: 8 }}>No courses enrolled yet</h3>
-              <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 20 }}>
+              <p style={{ color: textSecondary, fontSize: 14, marginBottom: 20 }}>
                 Explore available courses and enroll to start learning
               </p>
               <button
@@ -902,8 +906,8 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
                 return (
                   <a key={enrollment._id} href={`/learning-hub/course/${course._id}`} style={{ textDecoration: 'none' }}>
                     <div style={{
-                      background: 'white', borderRadius: 14,
-                      border: '1px solid #f3f4f6',
+                      background: bgCard, borderRadius: 14,
+                      border: `1px solid ${border}`,
                       boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                       overflow: 'hidden', cursor: 'pointer',
                     }}>
@@ -922,11 +926,11 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
                             }}>
                               {getInitials(course.lecturers[0].name)}
                             </div>
-                            <span style={{ fontSize: 12, color: '#6b7280' }}>{course.lecturers[0].name}</span>
+                            <span style={{ fontSize: 12, color: textSecondary }}>{course.lecturers[0].name}</span>
                           </div>
                         )}
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                          <span style={{ fontSize: 12, color: '#6b7280' }}>Progress</span>
+                          <span style={{ fontSize: 12, color: textSecondary }}>Progress</span>
                           <span style={{ fontSize: 12, fontWeight: 700, color }}>{enrollment.overallProgress}%</span>
                         </div>
                         <div style={{ height: 4, background: '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
@@ -947,7 +951,7 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
         <div>
           {unenrolledCourses.length === 0 ? (
             <div style={{
-              background: 'white', borderRadius: 16, padding: '40px 24px',
+              background: bgCard, borderRadius: 16, padding: '40px 24px',
               textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
             }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
@@ -956,7 +960,7 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
                   ? 'No courses available yet'
                   : 'You\'re enrolled in all available courses!'}
               </h3>
-              <p style={{ color: '#6b7280', fontSize: 14 }}>
+              <p style={{ color: textSecondary, fontSize: 14 }}>
                 {availableCourses.length === 0
                   ? 'Your department admin will add courses soon. Check back later.'
                   : 'Check back for new courses as they are added.'}
@@ -968,8 +972,8 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
                 const color = getCourseColor(course.code)
                 return (
                   <div key={course._id} style={{
-                    background: 'white', borderRadius: 14,
-                    border: '1px solid #f3f4f6',
+                    background: bgCard, borderRadius: 14,
+                    border: `1px solid ${border}`,
                     boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                     overflow: 'hidden',
                   }}>
@@ -979,7 +983,7 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
                     </div>
                     <div style={{ padding: '14px 20px' }}>
                       {course.description && (
-                        <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 12, lineHeight: 1.5 }}>
+                        <p style={{ fontSize: 13, color: textSecondary, marginBottom: 12, lineHeight: 1.5 }}>
                           {course.description.slice(0, 80)}...
                         </p>
                       )}
@@ -999,18 +1003,19 @@ function StudentHub({ user, deptLearningType, deptInfo, enrollments, availableCo
 // ===== STAFF HUB =====
 function StaffHub({ user, enrollments, availableCourses, streak, getCourseColor, getInitials }: any) {
   const [activeTab, setActiveTab] = useState<'my-courses' | 'explore'>('my-courses')
+  const { bgCard, text, textSecondary, border } = useTheme()
   const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
   const enrolledCourseIds = enrollments.map((e: any) => e.course?._id)
   const unenrolledCourses = availableCourses.filter((c: any) => !enrolledCourseIds.includes(c._id))
 
   return (
     <div style={{
-      background: 'white', borderRadius: 16,
+      background: bgCard, borderRadius: 16,
       boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
       overflow: 'hidden',
     }}>
       {/* Tabs */}
-      <div style={{ borderBottom: '1px solid #f3f4f6', display: 'flex', padding: '0 24px' }}>
+      <div style={{ borderBottom: `1px solid ${border}`, display: 'flex', padding: '0 24px' }}>
         {[
           { key: 'my-courses', label: '📚 My Courses', count: enrollments.length },
           { key: 'explore', label: '🔍 Explore Courses', count: unenrolledCourses.length },
@@ -1022,7 +1027,7 @@ function StaffHub({ user, enrollments, availableCourses, streak, getCourseColor,
               padding: '16px 4px', marginRight: 24,
               border: 'none', background: 'transparent',
               borderBottom: activeTab === tab.key ? '2px solid #16a34a' : '2px solid transparent',
-              color: activeTab === tab.key ? '#16a34a' : '#6b7280',
+              color: activeTab === tab.key ? '#16a34a' : textSecondary,
               fontWeight: activeTab === tab.key ? 700 : 400,
               fontSize: 14, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 8,
@@ -1047,7 +1052,7 @@ function StaffHub({ user, enrollments, availableCourses, streak, getCourseColor,
               <div style={{ textAlign: 'center', padding: '48px 0' }}>
                 <div style={{ fontSize: 64, marginBottom: 16 }}>📚</div>
                 <h3 style={{ marginBottom: 8 }}>No courses yet</h3>
-                <p style={{ color: '#6b7280', marginBottom: 20 }}>
+                <p style={{ color: textSecondary, marginBottom: 20 }}>
                   Explore available courses
                 </p>
                 <button className="btn-primary" onClick={() => setActiveTab('explore')}>
@@ -1063,8 +1068,8 @@ function StaffHub({ user, enrollments, availableCourses, streak, getCourseColor,
                   return (
                     <a key={enrollment._id} href={`/learning-hub/course/${course._id}`} style={{ textDecoration: 'none' }}>
                       <div style={{
-                        background: 'white', borderRadius: 14,
-                        border: '1px solid #f3f4f6',
+                        background: bgCard, borderRadius: 14,
+                        border: `1px solid ${border}`,
                         boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                         overflow: 'hidden',
                       }}>
@@ -1083,11 +1088,11 @@ function StaffHub({ user, enrollments, availableCourses, streak, getCourseColor,
                               }}>
                                 {getInitials(course.lecturers[0].name)}
                               </div>
-                              <span style={{ fontSize: 12, color: '#6b7280' }}>{course.lecturers[0].name}</span>
+                              <span style={{ fontSize: 12, color: textSecondary }}>{course.lecturers[0].name}</span>
                             </div>
                           )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <span style={{ fontSize: 12, color: '#6b7280' }}>Progress</span>
+                            <span style={{ fontSize: 12, color: textSecondary }}>Progress</span>
                             <span style={{ fontSize: 12, fontWeight: 700, color }}>{enrollment.overallProgress}%</span>
                           </div>
                           <div style={{ height: 4, background: '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
@@ -1109,7 +1114,7 @@ function StaffHub({ user, enrollments, availableCourses, streak, getCourseColor,
               <div style={{ textAlign: 'center', padding: '48px 0' }}>
                 <div style={{ fontSize: 64, marginBottom: 16 }}>🎉</div>
                 <h3>All caught up!</h3>
-                <p style={{ color: '#6b7280' }}>No new courses to explore right now.</p>
+                <p style={{ color: textSecondary }}>No new courses to explore right now.</p>
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
@@ -1117,8 +1122,8 @@ function StaffHub({ user, enrollments, availableCourses, streak, getCourseColor,
                   const color = getCourseColor(course.code)
                   return (
                     <div key={course._id} style={{
-                      background: 'white', borderRadius: 14,
-                      border: '1px solid #f3f4f6',
+                      background: bgCard, borderRadius: 14,
+                      border: `1px solid ${border}`,
                       boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                       overflow: 'hidden',
                     }}>
@@ -1128,7 +1133,7 @@ function StaffHub({ user, enrollments, availableCourses, streak, getCourseColor,
                       </div>
                       <div style={{ padding: '14px 20px' }}>
                         {course.description && (
-                          <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>
+                          <p style={{ fontSize: 13, color: textSecondary, marginBottom: 12 }}>
                             {course.description.slice(0, 80)}...
                           </p>
                         )}

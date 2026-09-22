@@ -5,6 +5,7 @@ import type { FormEvent, CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import { SkeletonTable } from '../components/Skeleton'
 import { getAuthToken, removeAuthToken } from '../utils/auth'
+import { useTheme } from '../context/ThemeContext'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
@@ -56,6 +57,7 @@ interface ShowcasePost {
 
 export default function AdminPage() {
   const router = useRouter()
+  const { isDark, bg, bgCard, text, textSecondary, border } = useTheme()
   const [activeTab, setActiveTab] = useState('departments')
   const [loading, setLoading] = useState(true)
   const [authChecked, setAuthChecked] = useState(false)
@@ -457,7 +459,7 @@ export default function AdminPage() {
     border: 'none',
     borderBottom: activeTab === tab ? '2px solid #16a34a' : '2px solid transparent',
     background: 'transparent',
-    color: activeTab === tab ? '#16a34a' : '#4b5563',
+    color: activeTab === tab ? '#16a34a' : textSecondary,
     fontWeight: activeTab === tab ? 700 : 400,
     fontSize: 13,
     whiteSpace: 'nowrap',
@@ -467,7 +469,7 @@ export default function AdminPage() {
     name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: 'calc(100vh - 60px)' }}>
+    <div style={{ background: bg, minHeight: 'calc(100vh - 60px)' }}>
 
       {/* ===== HERO HEADER ===== */}
       <div style={{
@@ -536,14 +538,14 @@ export default function AdminPage() {
 
         {/* Tabs card */}
         <div style={{
-          background: 'white', borderRadius: 16,
+          background: bgCard, borderRadius: 16,
           boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
           overflow: 'hidden',
         }}>
 
           {/* Tab bar */}
           <div className="admin-tabs" style={{
-            borderBottom: '1px solid #f3f4f6',
+            borderBottom: `1px solid ${border}`,
             display: 'flex',
             overflowX: 'auto',
             padding: '0 8px',
@@ -580,7 +582,7 @@ export default function AdminPage() {
                   <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>
                     🏛️ Create New Faculty
                   </h2>
-                  <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 20 }}>
+                  <p style={{ fontSize: 13, color: textSecondary, marginBottom: 20 }}>
                     After creating a faculty you can assign a Faculty Admin who will then create departments and courses.
                   </p>
 
@@ -622,13 +624,13 @@ export default function AdminPage() {
                     // Step 2: Assign faculty admin
                     <div>
                       <div style={{
-                        background: 'white', borderRadius: 10, padding: 16,
-                        marginBottom: 16, border: '1px solid #e5e7eb',
+                        background: bgCard, borderRadius: 10, padding: 16,
+                        marginBottom: 16, border: `1px solid ${border}`,
                       }}>
                         <h3 style={{ fontSize: 14, marginBottom: 4 }}>
                           Do you want to assign a Faculty Admin for <strong>{facultyName}</strong> now?
                         </h3>
-                        <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 14 }}>
+                        <p style={{ fontSize: 12, color: textSecondary, marginBottom: 14 }}>
                           The Faculty Admin will be responsible for creating departments and managing all staff in this faculty.
                           You can always assign one later from the Staff tab.
                         </p>
@@ -710,7 +712,7 @@ export default function AdminPage() {
                   <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>
                     📚 Create New Department
                   </h2>
-                  <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 20 }}>
+                  <p style={{ fontSize: 13, color: textSecondary, marginBottom: 20 }}>
                     Set up a department with its learning type and optionally assign a Department Admin.
                   </p>
 
@@ -775,7 +777,7 @@ export default function AdminPage() {
                       <h3 style={{ fontSize: 14, marginBottom: 4 }}>
                         What best describes <strong>{deptName}</strong>?
                       </h3>
-                      <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 16 }}>
+                      <p style={{ fontSize: 12, color: textSecondary, marginBottom: 16 }}>
                         This helps us create the right learning environment for students in this department.
                       </p>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8, marginBottom: 16 }}>
@@ -797,12 +799,12 @@ export default function AdminPage() {
                             onClick={() => setDeptLearningType(type.value)}
                             style={{
                               padding: '12px 14px', borderRadius: 10, cursor: 'pointer',
-                              border: deptLearningType === type.value ? '2px solid #2563eb' : '2px solid #e5e7eb',
-                              background: deptLearningType === type.value ? '#eff6ff' : 'white',
+                              border: deptLearningType === type.value ? '2px solid #2563eb' : `2px solid ${border}`,
+                              background: deptLearningType === type.value ? '#eff6ff' : bgCard,
                               transition: 'all 0.15s',
                             }}
                           >
-                            <div style={{ fontSize: 14, fontWeight: 700, color: '#1f2937', marginBottom: 3 }}>{type.label}</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 3 }}>{type.label}</div>
                             <div style={{ fontSize: 11, color: '#9ca3af' }}>{type.desc}</div>
                           </div>
                         ))}
@@ -823,13 +825,13 @@ export default function AdminPage() {
                     // Step 3: Assign dept admin
                     <div>
                       <div style={{
-                        background: 'white', borderRadius: 10, padding: 16,
-                        marginBottom: 16, border: '1px solid #e5e7eb',
+                        background: bgCard, borderRadius: 10, padding: 16,
+                        marginBottom: 16, border: `1px solid ${border}`,
                       }}>
                         <h3 style={{ fontSize: 14, marginBottom: 4 }}>
                           Assign a Department Admin for <strong>{deptName}</strong>?
                         </h3>
-                        <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 14 }}>
+                        <p style={{ fontSize: 12, color: textSecondary, marginBottom: 14 }}>
                           The Department Admin manages courses, lessons, timetable and student reps for this department.
                         </p>
                         <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
@@ -877,8 +879,8 @@ export default function AdminPage() {
 
                       {/* Summary */}
                       <div style={{
-                        background: '#f9fafb', borderRadius: 10, padding: 14,
-                        marginBottom: 16, border: '1px solid #e5e7eb',
+                        background: bg, borderRadius: 10, padding: 14,
+                        marginBottom: 16, border: `1px solid ${border}`,
                         fontSize: 13,
                       }}>
                         <div style={{ fontWeight: 700, marginBottom: 8 }}>📋 Summary</div>
@@ -888,8 +890,8 @@ export default function AdminPage() {
                           { label: 'Max Level', value: `${deptMaxLevel}L` },
                           { label: 'Learning Type', value: deptLearningType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) },
                         ].map(item => (
-                          <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #f3f4f6' }}>
-                            <span style={{ color: '#6b7280' }}>{item.label}</span>
+                          <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: `1px solid ${border}` }}>
+                            <span style={{ color: textSecondary }}>{item.label}</span>
                             <span style={{ fontWeight: 600 }}>{item.value}</span>
                           </div>
                         ))}
@@ -922,7 +924,7 @@ export default function AdminPage() {
                     Faculties ({faculties.length})
                   </h2>
                   {faculties.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '20px', color: '#9ca3af', background: '#f9fafb', borderRadius: 10 }}>
+                    <div style={{ textAlign: 'center', padding: '20px', color: '#9ca3af', background: bg, borderRadius: 10 }}>
                       No faculties yet. Create your first faculty above.
                     </div>
                   ) : (
@@ -932,8 +934,8 @@ export default function AdminPage() {
                         const isExpanded = expandedFaculty === faculty.name
                         return (
                           <div key={faculty._id || faculty.name} style={{
-                            background: 'white', borderRadius: 14,
-                            border: '1px solid #e5e7eb',
+                            background: bgCard, borderRadius: 14,
+                            border: `1px solid ${border}`,
                             overflow: 'hidden',
                             boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                           }}>
@@ -944,7 +946,7 @@ export default function AdminPage() {
                                 display: 'flex', justifyContent: 'space-between',
                                 alignItems: 'center', padding: '16px 20px',
                                 cursor: 'pointer',
-                                background: isExpanded ? '#f0fdf4' : 'white',
+                                background: isExpanded ? '#f0fdf4' : bgCard,
                                 transition: 'background 0.15s',
                               }}
                             >
@@ -959,11 +961,11 @@ export default function AdminPage() {
                                   🏛️
                                 </div>
                                 <div>
-                                  <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1f2937', margin: 0 }}>
+                                  <h3 style={{ fontSize: 15, fontWeight: 700, color: text, margin: 0 }}>
                                     {faculty.name}
                                   </h3>
                                   {faculty.description && (
-                                    <p style={{ fontSize: 12, color: '#6b7280', margin: '2px 0 0' }}>
+                                    <p style={{ fontSize: 12, color: textSecondary, margin: '2px 0 0' }}>
                                       {faculty.description.slice(0, 60)}{faculty.description.length > 60 ? '...' : ''}
                                     </p>
                                   )}
@@ -1009,7 +1011,7 @@ export default function AdminPage() {
                             {/* Departments under this faculty — expandable */}
                             {isExpanded && (
                               <div style={{
-                                borderTop: '1px solid #f3f4f6',
+                                borderTop: `1px solid ${border}`,
                                 padding: '16px 20px',
                                 background: '#fafafa',
                               }}>
@@ -1038,11 +1040,11 @@ export default function AdminPage() {
                                       const typeInfo = learningTypeLabels[(dept as any).learningType] || { label: 'General', icon: '📚' }
                                       return (
                                         <div key={dept._id} style={{
-                                          background: 'white', borderRadius: 10,
-                                          padding: '14px 16px', border: '1px solid #e5e7eb',
+                                          background: bgCard, borderRadius: 10,
+                                          padding: '14px 16px', border: `1px solid ${border}`,
                                         }}>
                                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                                            <h4 style={{ fontSize: 13, fontWeight: 700, color: '#1f2937', margin: 0 }}>
+                                            <h4 style={{ fontSize: 13, fontWeight: 700, color: text, margin: 0 }}>
                                               {dept.name}
                                             </h4>
                                             <button
@@ -1122,10 +1124,10 @@ export default function AdminPage() {
 
                 {/* Faculty → Department → Level filter */}
                 <div style={{
-                  background: '#f9fafb', borderRadius: 12, padding: 16,
-                  marginBottom: 20, border: '1px solid #e5e7eb',
+                  background: bg, borderRadius: 12, padding: 16,
+                  marginBottom: 20, border: `1px solid ${border}`,
                 }}>
-                  <p style={{ fontSize: 12, color: '#6b7280', fontWeight: 600, marginBottom: 12 }}>
+                  <p style={{ fontSize: 12, color: textSecondary, fontWeight: 600, marginBottom: 12 }}>
                     Filter Students
                   </p>
                   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -1208,7 +1210,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Results count */}
-                <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>
+                <p style={{ fontSize: 13, color: textSecondary, marginBottom: 12 }}>
                   Showing {filteredStudents.length} student{filteredStudents.length !== 1 ? 's' : ''}
                   {studentFilterLevel && ` in ${studentFilterLevel}`}
                   {studentFilterDept && ` • ${studentFilterDept}`}
@@ -1218,15 +1220,15 @@ export default function AdminPage() {
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
-                      <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                      <tr style={{ background: bg, borderBottom: `1px solid ${border}` }}>
                         {['Student', 'Faculty', 'Department', 'Level', 'Reg No', 'Status'].map(h => (
-                          <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: '#6b7280', fontWeight: 600, fontSize: 12 }}>{h}</th>
+                          <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: textSecondary, fontWeight: 600, fontSize: 12 }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {filteredStudents.map(u => (
-                        <tr key={u._id} style={{ borderBottom: '1px solid #f9fafb' }}>
+                        <tr key={u._id} style={{ borderBottom: `1px solid ${border}` }}>
                           <td style={{ padding: '12px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                               <div style={{
@@ -1243,15 +1245,15 @@ export default function AdminPage() {
                               </div>
                             </div>
                           </td>
-                          <td style={{ padding: '12px', color: '#4b5563', fontSize: 12 }}>{u.faculty || '—'}</td>
-                          <td style={{ padding: '12px', color: '#4b5563', fontSize: 12 }}>{u.department || '—'}</td>
+                          <td style={{ padding: '12px', color: textSecondary, fontSize: 12 }}>{u.faculty || '—'}</td>
+                          <td style={{ padding: '12px', color: textSecondary, fontSize: 12 }}>{u.department || '—'}</td>
                           <td style={{ padding: '12px' }}>
                             <span style={{
                               background: '#f0fdf4', color: '#16a34a',
                               padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700,
                             }}>{u.level || '—'}</span>
                           </td>
-                          <td style={{ padding: '12px', color: '#4b5563', fontSize: 12 }}>{u.regNumber || '—'}</td>
+                          <td style={{ padding: '12px', color: textSecondary, fontSize: 12 }}>{u.regNumber || '—'}</td>
                           <td style={{ padding: '12px' }}>
                             <span style={{
                               background: u.graduated ? '#dcfce7' : '#f0fdf4',
@@ -1283,15 +1285,15 @@ export default function AdminPage() {
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
-                      <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                      <tr style={{ background: bg, borderBottom: `1px solid ${border}` }}>
                         {['Lecturer', 'Faculty', 'Department', 'Actions'].map(h => (
-                          <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: '#6b7280', fontWeight: 600, fontSize: 12 }}>{h}</th>
+                          <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: textSecondary, fontWeight: 600, fontSize: 12 }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {users.filter(u => u.role !== 'student').map(u => (
-                        <tr key={u._id} style={{ borderBottom: '1px solid #f9fafb' }}>
+                        <tr key={u._id} style={{ borderBottom: `1px solid ${border}` }}>
                           <td style={{ padding: '12px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                               <div style={{
@@ -1306,8 +1308,8 @@ export default function AdminPage() {
                               </div>
                             </div>
                           </td>
-                          <td style={{ padding: '12px', color: '#4b5563', fontSize: 12 }}>{u.faculty || '—'}</td>
-                          <td style={{ padding: '12px', color: '#4b5563', fontSize: 12 }}>{u.department || '—'}</td>
+                          <td style={{ padding: '12px', color: textSecondary, fontSize: 12 }}>{u.faculty || '—'}</td>
+                          <td style={{ padding: '12px', color: textSecondary, fontSize: 12 }}>{u.department || '—'}</td>
                           <td style={{ padding: '12px' }}>
                             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                               {/* Role badge */}
@@ -1419,15 +1421,15 @@ export default function AdminPage() {
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                       <thead>
-                        <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                        <tr style={{ background: bg, borderBottom: `1px solid ${border}` }}>
                           {['Name', 'Faculty', 'Department', 'Actions'].map(h => (
-                            <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: '#6b7280', fontWeight: 600, fontSize: 12 }}>{h}</th>
+                            <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: textSecondary, fontWeight: 600, fontSize: 12 }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {users.filter(u => u.role === 'department_admin').map(u => (
-                          <tr key={u._id} style={{ borderBottom: '1px solid #f9fafb' }}>
+                          <tr key={u._id} style={{ borderBottom: `1px solid ${border}` }}>
                             <td style={{ padding: '12px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                 <div style={{
@@ -1442,8 +1444,8 @@ export default function AdminPage() {
                                 </div>
                               </div>
                             </td>
-                            <td style={{ padding: '12px', color: '#4b5563', fontSize: 12 }}>{u.faculty || '—'}</td>
-                            <td style={{ padding: '12px', color: '#4b5563', fontSize: 12 }}>{u.department || '—'}</td>
+                            <td style={{ padding: '12px', color: textSecondary, fontSize: 12 }}>{u.faculty || '—'}</td>
+                            <td style={{ padding: '12px', color: textSecondary, fontSize: 12 }}>{u.department || '—'}</td>
                             <td style={{ padding: '12px' }}>
                               <button
                                 onClick={() => demoteDeptAdmin(u._id)}
@@ -1478,15 +1480,15 @@ export default function AdminPage() {
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                       <thead>
-                        <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                        <tr style={{ background: bg, borderBottom: `1px solid ${border}` }}>
                           {['Faculty Admin', 'Faculty', 'Department', 'Actions'].map(h => (
-                            <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: '#6b7280', fontWeight: 600, fontSize: 12 }}>{h}</th>
+                            <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: textSecondary, fontWeight: 600, fontSize: 12 }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {facultyAdmins.map(u => (
-                          <tr key={u._id} style={{ borderBottom: '1px solid #f9fafb' }}>
+                          <tr key={u._id} style={{ borderBottom: `1px solid ${border}` }}>
                             <td style={{ padding: '12px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                 <div style={{
@@ -1501,8 +1503,8 @@ export default function AdminPage() {
                                 </div>
                               </div>
                             </td>
-                            <td style={{ padding: '12px', color: '#4b5563', fontSize: 12 }}>{u.faculty || '—'}</td>
-                            <td style={{ padding: '12px', color: '#4b5563', fontSize: 12 }}>{u.department || '—'}</td>
+                            <td style={{ padding: '12px', color: textSecondary, fontSize: 12 }}>{u.faculty || '—'}</td>
+                            <td style={{ padding: '12px', color: textSecondary, fontSize: 12 }}>{u.department || '—'}</td>
                             <td style={{ padding: '12px' }}>
                               <button onClick={() => demoteFromAdmin(u._id)} style={{
                                 padding: '4px 10px', borderRadius: 6, border: 'none',
@@ -1530,7 +1532,7 @@ export default function AdminPage() {
                 {/* Group by department and level */}
                 {[...new Set(students.map(s => s.department).filter(Boolean))].map(dept => (
                   <div key={dept} style={{ marginBottom: 24 }}>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, color: '#374151', marginBottom: 12, padding: '8px 12px', background: '#f9fafb', borderRadius: 8 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: '#374151', marginBottom: 12, padding: '8px 12px', background: bg, borderRadius: 8 }}>
                       🏛️ {dept}
                     </h3>
                     {[...new Set(students.filter(s => s.department === dept).map(s => s.level).filter(Boolean))].sort().map(level => {
@@ -1554,7 +1556,7 @@ export default function AdminPage() {
                               {levelStudents.map(u => {
                                 const canGrant = u.canHostLive || hostsInLevel < 2
                                 return (
-                                  <tr key={u._id} style={{ borderBottom: '1px solid #f9fafb' }}>
+                                  <tr key={u._id} style={{ borderBottom: `1px solid ${border}` }}>
                                     <td style={{ padding: '8px 12px' }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                         <div style={{
@@ -1612,7 +1614,7 @@ export default function AdminPage() {
                         placeholder="Tell visitors what this video is about..."
                         value={showcaseDesc} onChange={e => setShowcaseDesc(e.target.value)}
                         rows={3}
-                        style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e5e7eb', borderRadius: 8, fontSize: 14, resize: 'vertical', fontFamily: 'inherit', outline: 'none' }}
+                        style={{ width: '100%', padding: '10px 12px', border: `1.5px solid ${border}`, borderRadius: 8, fontSize: 14, resize: 'vertical', fontFamily: 'inherit', outline: 'none' }}
                       />
                       <label>YouTube / Vimeo URL *</label>
                       <input
@@ -1646,7 +1648,7 @@ export default function AdminPage() {
                   </div>
 
                   {/* Info panel */}
-                  <div style={{ background: '#f9fafb', borderRadius: 12, padding: 20, border: '1px solid #e5e7eb' }}>
+                  <div style={{ background: bg, borderRadius: 12, padding: 20, border: `1px solid ${border}` }}>
                     <h3 style={{ fontSize: 14, marginBottom: 12 }}>📋 Supported Links</h3>
                     {[
                       { icon: '🎥', label: 'YouTube', example: 'youtube.com/watch?v=...' },
@@ -1677,7 +1679,7 @@ export default function AdminPage() {
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
                     {showcasePosts.map(post => (
-                      <div key={post._id} style={{ background: '#f9fafb', borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+                      <div key={post._id} style={{ background: bg, borderRadius: 12, overflow: 'hidden', border: `1px solid ${border}` }}>
                         {/* Thumbnail */}
                         <div style={{ position: 'relative', aspectRatio: '16/9', background: '#1a1a2e' }}>
                           {post.thumbnail ? (
@@ -1692,7 +1694,7 @@ export default function AdminPage() {
                           )}
                         </div>
                         <div style={{ padding: '12px 14px' }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#1f2937', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {post.title}
                           </div>
                           <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
@@ -1734,8 +1736,8 @@ export default function AdminPage() {
               <div>
                 {/* Current session */}
                 <div style={{
-                  background: '#f9fafb', borderRadius: 12, padding: 20, marginBottom: 24,
-                  border: '1px solid #e5e7eb',
+                  background: bg, borderRadius: 12, padding: 20, marginBottom: 24,
+                  border: `1px solid ${border}`,
                 }}>
                   <h2 style={{ marginBottom: 16, fontSize: 16 }}>Current Academic Session</h2>
                   {academic ? (
@@ -1747,9 +1749,9 @@ export default function AdminPage() {
                           { label: 'Status', value: academic.isActive ? '🟢 Active' : '🔴 Inactive' },
                           { label: 'Promotion', value: academic.promotionDone ? '✅ Done' : '⏳ Pending' },
                         ].map(item => (
-                          <div key={item.label} style={{ background: 'white', borderRadius: 8, padding: '12px 16px', border: '1px solid #e5e7eb' }}>
+                          <div key={item.label} style={{ background: bgCard, borderRadius: 8, padding: '12px 16px', border: `1px solid ${border}` }}>
                             <p style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>{item.label}</p>
-                            <p style={{ fontWeight: 700, color: '#1f2937', fontSize: 14 }}>{item.value}</p>
+                            <p style={{ fontWeight: 700, color: text, fontSize: 14 }}>{item.value}</p>
                           </div>
                         ))}
                       </div>
@@ -1776,7 +1778,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Create session */}
-                <div style={{ background: '#f9fafb', borderRadius: 12, padding: 20, border: '1px solid #e5e7eb' }}>
+                <div style={{ background: bg, borderRadius: 12, padding: 20, border: `1px solid ${border}` }}>
                   <h2 style={{ marginBottom: 16, fontSize: 16 }}>Create New Session</h2>
                   <form onSubmit={handleCreateSession}>
                     <label>Session Name</label>

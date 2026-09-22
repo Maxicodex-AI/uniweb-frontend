@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { getAuthToken } from '../utils/auth'
 import { SkeletonList } from '../components/Skeleton'
+import { useTheme } from '../context/ThemeContext'
 
 interface Announcement {
   _id: string
@@ -44,6 +45,7 @@ export default function AnnouncementsPage() {
   const [showForm, setShowForm] = useState(false)
   const [filter, setFilter] = useState<'all' | 'urgent' | 'important' | 'general'>('all')
   const [search, setSearch] = useState('')
+  const { isDark, bg, bgCard, text, textSecondary, border, inputBg } = useTheme()
 
   // Form state
   const [title, setTitle] = useState('')
@@ -232,7 +234,7 @@ if (loading) return (
 )
 
 return (
-    <div style={{ background: '#f8fafc', minHeight: 'calc(100vh - 60px)' }}>
+    <div style={{ background: bg, minHeight: 'calc(100vh - 60px)' }}>
 
       {/* ===== HERO HEADER ===== */}
       <div style={{
@@ -313,7 +315,7 @@ return (
         {/* Create form */}
         {showForm && (
           <div style={{
-            background: 'white', borderRadius: 16, marginBottom: 24,
+            background: bgCard, borderRadius: 16, marginBottom: 24,
             boxShadow: '0 4px 24px rgba(0,0,0,0.08)', overflow: 'hidden',
           }}>
             <div style={{
@@ -326,7 +328,7 @@ return (
               <form onSubmit={handleCreate}>
 
                 {/* Priority selector */}
-                <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 8 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, display: 'block', marginBottom: 8 }}>
                   Priority Level
                 </label>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
@@ -338,13 +340,13 @@ return (
                         onClick={() => setPriority(p)}
                         style={{
                           flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer',
-                          border: priority === p ? `2px solid ${cfg.color}` : '2px solid #e5e7eb',
-                          background: priority === p ? cfg.bg : 'white',
+                          border: priority === p ? `2px solid ${cfg.color}` : `2px solid ${border}`,
+                          background: priority === p ? cfg.bg : bgCard,
                           textAlign: 'center', transition: 'all 0.15s',
                         }}
                       >
                         <div style={{ fontSize: 20, marginBottom: 2 }}>{cfg.icon}</div>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: priority === p ? cfg.color : '#6b7280' }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: priority === p ? cfg.color : textSecondary }}>
                           {cfg.label}
                         </div>
                       </div>
@@ -369,9 +371,10 @@ return (
                   rows={4}
                   style={{
                     width: '100%', padding: '10px 12px',
-                    border: '1.5px solid #e5e7eb', borderRadius: 8,
+                    border: `1.5px solid ${border}`, borderRadius: 8,
                     fontSize: 14, marginTop: 4, resize: 'vertical',
                     fontFamily: 'inherit', outline: 'none',
+                    background: inputBg, color: text,
                   }}
                 />
 
@@ -462,7 +465,7 @@ return (
 
         {/* Search bar */}
         <div style={{
-          background: 'white', borderRadius: 12, padding: '12px 16px',
+          background: bgCard, borderRadius: 12, padding: '12px 16px',
           marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
           display: 'flex', alignItems: 'center', gap: 10,
         }}>
@@ -474,7 +477,7 @@ return (
             onChange={e => setSearch(e.target.value)}
             style={{
               flex: 1, border: 'none', outline: 'none',
-              fontSize: 14, color: '#374151', background: 'transparent',
+              fontSize: 14, color: text, background: 'transparent',
             }}
           />
           {search && (
@@ -498,7 +501,7 @@ return (
         {!loading && filtered.length === 0 && (
           <div style={{
             textAlign: 'center', padding: '60px 24px',
-            background: 'white', borderRadius: 16,
+            background: bgCard, borderRadius: 16,
             boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
           }}>
             <div style={{ fontSize: 64, marginBottom: 16 }}>📢</div>
@@ -519,7 +522,7 @@ return (
               <div
                 key={ann._id}
                 style={{
-                  background: 'white', borderRadius: 16,
+                  background: bgCard, borderRadius: 16,
                   boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
                   overflow: 'hidden',
                   borderLeft: `4px solid ${cfg.color}`,
@@ -562,12 +565,12 @@ return (
                         </div>
 
                         {/* Title */}
-                        <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1f2937', marginBottom: 8 }}>
+                        <h3 style={{ fontSize: 16, fontWeight: 700, color: text, marginBottom: 8 }}>
                           {ann.title}
                         </h3>
 
                         {/* Content */}
-                        <p style={{ color: '#4b5563', fontSize: 14, lineHeight: 1.6 }}>
+                        <p style={{ color: textSecondary, fontSize: 14, lineHeight: 1.6 }}>
                           {ann.content}
                         </p>
 

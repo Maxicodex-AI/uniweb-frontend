@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { getAuthToken } from '../utils/auth'
 import { useRouter } from 'next/navigation'
+import { useTheme } from '../context/ThemeContext'
 
 interface Message {
   _id: string
@@ -44,8 +45,9 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
 export default function ChatPage() {
   const router = useRouter()
+  const { isDark, bg, bgCard, text, textSecondary, border } = useTheme()
   const [messages, setMessages] = useState<Message[]>([])
-  const [text, setText] = useState('')
+  const [text_, setText] = useState('')
   const [socket, setSocket] = useState<Socket | null>(null)
   const [online, setOnline] = useState<any[]>([])
   const [activeRoom, setActiveRoom] = useState<Room | null>(null)
@@ -162,11 +164,11 @@ export default function ChatPage() {
 
   const sendMessage = async () => {
     const token = getAuthToken()
-    if (!text.trim() || !token || !activeRoom) return
+    if (!text_.trim() || !token || !activeRoom) return
     await fetch(`${API_BASE}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ message: text, roomId: activeRoom._id }),
+      body: JSON.stringify({ message: text_, roomId: activeRoom._id }),
     })
     setText('')
   }
@@ -360,8 +362,8 @@ export default function ChatPage() {
         style={{
           display: 'flex', alignItems: 'center', gap: 12,
           padding: '12px 16px', cursor: 'pointer',
-          background: isActive ? '#f0fdf4' : 'white',
-          borderBottom: '1px solid #f9fafb',
+          background: isActive ? '#f0fdf4' : bgCard,
+          borderBottom: `1px solid ${border}`,
           borderLeft: isActive ? `3px solid ${color}` : '3px solid transparent',
           transition: 'all 0.15s',
         }}
@@ -378,12 +380,12 @@ export default function ChatPage() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontSize: 14, fontWeight: isActive ? 700 : 500,
-            color: '#1f2937', whiteSpace: 'nowrap',
+            color: text, whiteSpace: 'nowrap',
             overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {getRoomDisplayName(room)}
           </div>
-          <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
+          <div style={{ fontSize: 12, color: textSecondary, marginTop: 2 }}>
             {getRoomDescription(room)}
           </div>
         </div>
@@ -406,8 +408,8 @@ export default function ChatPage() {
       {/* ===== ROOMS PANEL ===== */}
       <div style={{
         width: 340,
-        background: 'white',
-        borderRight: '1px solid #e5e7eb',
+        background: bgCard,
+        borderRight: `1px solid ${border}`,
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
@@ -449,18 +451,18 @@ export default function ChatPage() {
         </div>
 
         {/* Search rooms */}
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6' }}>
+        <div style={{ padding: '12px 16px', borderBottom: `1px solid ${border}` }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            background: '#f9fafb', borderRadius: 10, padding: '8px 12px',
-            border: '1px solid #e5e7eb',
+            background: bg, borderRadius: 10, padding: '8px 12px',
+            border: `1px solid ${border}`,
           }}>
             <span style={{ color: '#9ca3af' }}>🔍</span>
             <input
               placeholder="Search conversations..."
               style={{
                 border: 'none', background: 'transparent', outline: 'none',
-                fontSize: 13, color: '#374151', flex: 1,
+                fontSize: 13, color: text, flex: 1,
               }}
             />
           </div>
@@ -542,7 +544,7 @@ export default function ChatPage() {
                       style={{
                         display: 'flex', alignItems: 'center', gap: 12,
                         padding: '10px 16px', cursor: 'pointer',
-                        background: '#fafafa', borderBottom: '1px solid #f3f4f6',
+                        background: '#fafafa', borderBottom: `1px solid ${border}`,
                         userSelect: 'none',
                       }}
                     >
@@ -553,7 +555,7 @@ export default function ChatPage() {
                         fontSize: 16, flexShrink: 0,
                       }}>📚</div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1f2937' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: text }}>
                           {abbreviate(dept)}
                         </div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>
@@ -577,7 +579,7 @@ export default function ChatPage() {
 
           {/* Online users */}
           {online.length > 0 && (
-            <div style={{ padding: '12px 16px', borderTop: '1px solid #f3f4f6', background: '#fafafa', marginTop: 8 }}>
+            <div style={{ padding: '12px 16px', borderTop: `1px solid ${border}`, background: '#fafafa', marginTop: 8 }}>
               <p style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', letterSpacing: 1.5, marginBottom: 8 }}>
                 ONLINE NOW
               </p>
@@ -626,8 +628,8 @@ export default function ChatPage() {
               background: '#16a34a20', display: 'flex',
               alignItems: 'center', justifyContent: 'center', fontSize: 36,
             }}>💬</div>
-            <h3 style={{ color: '#1f2937', margin: 0 }}>Select a conversation</h3>
-            <p style={{ color: '#6b7280', fontSize: 14, margin: 0 }}>
+            <h3 style={{ color: text, margin: 0 }}>Select a conversation</h3>
+            <p style={{ color: textSecondary, fontSize: 14, margin: 0 }}>
               Choose a room from the left to start chatting
             </p>
           </div>
@@ -638,8 +640,8 @@ export default function ChatPage() {
           <>
             {/* Chat header */}
             <div style={{
-              padding: '12px 20px', background: 'white',
-              borderBottom: '1px solid #e5e7eb',
+              padding: '12px 20px', background: bgCard,
+              borderBottom: `1px solid ${border}`,
               display: 'flex', alignItems: 'center', gap: 12,
               boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
             }}>
@@ -649,7 +651,7 @@ export default function ChatPage() {
                 className="chat-back-btn"
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: 20, color: '#374151', padding: 4,
+                  fontSize: 20, color: text, padding: 4,
                   display: 'none',
                 }}
               >
@@ -665,10 +667,10 @@ export default function ChatPage() {
                 {getRoomIcon(activeRoom)}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#1f2937' }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: text }}>
                   {getRoomDisplayName(activeRoom)}
                 </div>
-                <div style={{ fontSize: 12, color: '#6b7280' }}>
+                <div style={{ fontSize: 12, color: textSecondary }}>
                   {getRoomDescription(activeRoom)}
                 </div>
               </div>
@@ -694,7 +696,7 @@ export default function ChatPage() {
               {messages.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
                   <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
-                  <p style={{ color: '#6b7280', fontSize: 14 }}>
+                  <p style={{ color: textSecondary, fontSize: 14 }}>
                     {canPost() ? 'No messages yet. Start the conversation!' : 'No messages yet in this room.'}
                   </p>
                 </div>
@@ -777,9 +779,9 @@ export default function ChatPage() {
                                 position: 'absolute',
                                 [mine ? 'right' : 'left']: 0,
                                 bottom: '100%', marginBottom: 4,
-                                background: 'white', borderRadius: 12,
+                                background: bgCard, borderRadius: 12,
                                 boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-                                border: '1px solid #e5e7eb',
+                                border: `1px solid ${border}`,
                                 zIndex: 100, overflow: 'hidden', minWidth: 160,
                               }}
                                 onClick={e => e.stopPropagation()}
@@ -787,9 +789,9 @@ export default function ChatPage() {
                                 {mine && (
                                   <button onClick={() => startEdit(msg)} style={{
                                     width: '100%', padding: '11px 16px', border: 'none',
-                                    background: 'white', cursor: 'pointer', textAlign: 'left',
+                                    background: bgCard, cursor: 'pointer', textAlign: 'left',
                                     fontSize: 13, display: 'flex', alignItems: 'center', gap: 10,
-                                    color: '#374151',
+                                    color: text,
                                   }}>
                                     ✏️ Edit message
                                   </button>
@@ -797,9 +799,9 @@ export default function ChatPage() {
                                 {mine && (
                                   <button onClick={() => deleteForAll(msg._id)} style={{
                                     width: '100%', padding: '11px 16px', border: 'none',
-                                    background: 'white', cursor: 'pointer', textAlign: 'left',
+                                    background: bgCard, cursor: 'pointer', textAlign: 'left',
                                     fontSize: 13, display: 'flex', alignItems: 'center', gap: 10,
-                                    color: '#ef4444', borderTop: '1px solid #f3f4f6',
+                                    color: '#ef4444', borderTop: `1px solid ${border}`,
                                   }}>
                                     🗑️ Delete for everyone
                                   </button>
@@ -807,9 +809,9 @@ export default function ChatPage() {
                                 {!mine && (
                                   <button onClick={() => hideForMe(msg._id)} style={{
                                     width: '100%', padding: '11px 16px', border: 'none',
-                                    background: 'white', cursor: 'pointer', textAlign: 'left',
+                                    background: bgCard, cursor: 'pointer', textAlign: 'left',
                                     fontSize: 13, display: 'flex', alignItems: 'center', gap: 10,
-                                    color: '#6b7280',
+                                    color: textSecondary,
                                   }}>
                                     🙈 Hide for me
                                   </button>
@@ -820,7 +822,7 @@ export default function ChatPage() {
                             {/* Editing */}
                             {isEditing ? (
                               <div style={{
-                                background: mine ? '#dcf8c6' : 'white',
+                                background: mine ? '#dcf8c6' : bgCard,
                                 borderRadius: mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                                 padding: '8px 12px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
                               }}>
@@ -831,7 +833,7 @@ export default function ChatPage() {
                                   style={{
                                     width: 200, border: 'none', outline: 'none',
                                     background: 'transparent', fontSize: 14,
-                                    fontFamily: 'inherit', resize: 'none', color: '#1f2937',
+                                    fontFamily: 'inherit', resize: 'none', color: text,
                                   }}
                                 />
                                 <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
@@ -848,7 +850,7 @@ export default function ChatPage() {
                               </div>
                             ) : (
                               <div style={{
-                                background: isDeleted ? '#f9fafb' : mine ? '#dcf8c6' : 'white',
+                                background: isDeleted ? '#f9fafb' : mine ? '#dcf8c6' : bgCard,
                                 padding: '8px 12px',
                                 borderRadius: mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                                 boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
@@ -857,7 +859,7 @@ export default function ChatPage() {
                                 <p style={{
                                   margin: 0, fontSize: 14, lineHeight: 1.5,
                                   wordBreak: 'break-word',
-                                  color: isDeleted ? '#9ca3af' : '#1f2937',
+                                  color: isDeleted ? '#9ca3af' : text,
                                   fontStyle: isDeleted ? 'italic' : 'normal',
                                 }}>
                                   {isDeleted ? '🚫 This message was deleted' : msg.message}
@@ -888,8 +890,8 @@ export default function ChatPage() {
                                   key={emoji}
                                   onClick={() => canReact() && addReaction(msg._id, emoji)}
                                   style={{
-                                    background: hasReacted(msg.reactions || [], emoji) ? '#dcfce7' : 'white',
-                                    border: hasReacted(msg.reactions || [], emoji) ? '1px solid #16a34a' : '1px solid #e5e7eb',
+                                    background: hasReacted(msg.reactions || [], emoji) ? '#dcfce7' : bgCard,
+                                    border: hasReacted(msg.reactions || [], emoji) ? '1px solid #16a34a' : `1px solid ${border}`,
                                     borderRadius: 999, padding: '2px 8px', fontSize: 13,
                                     cursor: canReact() ? 'pointer' : 'default',
                                     display: 'flex', alignItems: 'center', gap: 4,
@@ -928,22 +930,22 @@ export default function ChatPage() {
             {canPost() ? (
               <div style={{
                 padding: '12px 16px', background: '#f0f2f5',
-                borderTop: '1px solid #e5e7eb',
+                borderTop: `1px solid ${border}`,
                 display: 'flex', alignItems: 'flex-end', gap: 8,
               }}>
                 <div style={{
-                  flex: 1, background: 'white', borderRadius: 24,
+                  flex: 1, background: bgCard, borderRadius: 24,
                   padding: '10px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                 }}>
                   <textarea
-                    value={text}
+                    value={text_}
                     onChange={e => setText(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={activeRoom?.subType === 'resources' ? 'Share notes or announcements...' : 'Type a message...'}
                     rows={1}
                     style={{
                       width: '100%', border: 'none', outline: 'none',
-                      resize: 'none', fontSize: 14, color: '#1f2937',
+                      resize: 'none', fontSize: 14, color: text,
                       background: 'transparent', fontFamily: 'inherit',
                       lineHeight: 1.5, maxHeight: 120, overflowY: 'auto',
                     }}
@@ -951,12 +953,12 @@ export default function ChatPage() {
                 </div>
                 <button
                   onClick={sendMessage}
-                  disabled={!text.trim()}
+                  disabled={!text_.trim()}
                   style={{
                     width: 44, height: 44, borderRadius: '50%',
-                    background: text.trim() ? '#16a34a' : '#e5e7eb',
+                    background: text_.trim() ? '#16a34a' : '#e5e7eb',
                     border: 'none',
-                    cursor: text.trim() ? 'pointer' : 'default',
+                    cursor: text_.trim() ? 'pointer' : 'default',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0, transition: 'background 0.15s', fontSize: 18,
                   }}

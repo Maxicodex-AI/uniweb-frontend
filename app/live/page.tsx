@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { io } from 'socket.io-client'
 import { getAuthToken } from '../utils/auth'
 import { SkeletonList } from '../components/Skeleton'
+import { useTheme } from '../context/ThemeContext'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
@@ -59,6 +60,7 @@ function LiveTimer({ createdAt }: { createdAt: string }) {
 
 export default function LivePage() {
   const router = useRouter()
+  const { isDark, bg, bgCard, text, textSecondary, border } = useTheme()
 
   const [liveList, setLiveList] = useState<Live[]>([])
   const [user, setUser] = useState<User | null>(null)
@@ -252,7 +254,7 @@ if (loading) return (
 )
 
 return (
-    <div className="live-page" style={{ background: '#f8fafc', minHeight: 'calc(100vh - 60px)' }}>
+    <div className="live-page" style={{ background: bg, minHeight: 'calc(100vh - 60px)' }}>
       <div className="page">
 
         {/* ===== HEADER ===== */}
@@ -266,7 +268,7 @@ return (
         }}>
           <div>
             <div className="live-eyebrow">Live Classes</div>
-            <h1 style={{ marginBottom: 6, letterSpacing: '-0.02em' }}>Live Classes</h1>
+            <h1 style={{ marginBottom: 6, letterSpacing: '-0.02em', color: text }}>Live Classes</h1>
             <p style={{ color: '#64748b', fontSize: 14.5 }}>
               {liveList.length > 0
                 ? `${liveList.length} active session${liveList.length > 1 ? 's' : ''} right now`
@@ -297,7 +299,7 @@ return (
         {/* ===== START LIVE FORM ===== */}
         {showForm && (
           <div className="live-form-card fade-in-up" style={{
-            background: 'white',
+            background: bgCard,
             borderRadius: 20,
             boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 20px 48px -12px rgba(15,23,42,0.14)',
             marginBottom: 36,
@@ -380,7 +382,7 @@ return (
                 {/* STEP 1: Session Info */}
                 {(formStep === 1 || user?.role === 'student') && (
                   <div className="fade-in-up">
-                    <label htmlFor="live-title" style={{ fontSize: 13.5, fontWeight: 600, color: '#374151' }}>
+                    <label htmlFor="live-title" style={{ fontSize: 13.5, fontWeight: 600, color: textSecondary }}>
                       Session Title
                     </label>
                     <input
@@ -396,7 +398,7 @@ return (
                     {/* Level for lecturers */}
                     {(user?.role === 'lecturer' || user?.role === 'admin') && (
                       <div>
-                        <label htmlFor="live-level" style={{ fontSize: 13.5, fontWeight: 600, color: '#374151' }}>
+                        <label htmlFor="live-level" style={{ fontSize: 13.5, fontWeight: 600, color: textSecondary }}>
                           Level (applies to all target classes)
                         </label>
                         <select
@@ -416,7 +418,7 @@ return (
                     {/* Lecturer tag for student hosts */}
                     {user?.role === 'student' && (
                       <div>
-                        <label htmlFor="live-lecturer" style={{ fontSize: 13.5, fontWeight: 600, color: '#374151' }}>
+                        <label htmlFor="live-lecturer" style={{ fontSize: 13.5, fontWeight: 600, color: textSecondary }}>
                           Tag your lecturer
                         </label>
                         <select
@@ -514,9 +516,9 @@ return (
                       <div style={{
                         textAlign: 'center',
                         padding: '36px 20px',
-                        background: '#f9fafb',
+                        background: bg,
                         borderRadius: 12,
-                        border: '2px dashed #e5e7eb',
+                        border: `2px dashed ${border}`,
                         color: '#9ca3af',
                         fontSize: 14,
                       }}>
@@ -592,13 +594,13 @@ return (
                 {formStep === 3 && (user?.role === 'lecturer' || user?.role === 'admin') && (
                   <div className="fade-in-up">
                     <div style={{
-                      background: '#f9fafb',
+                      background: bg,
                       borderRadius: 14,
                       padding: 22,
                       marginBottom: 22,
-                      border: '1px solid #f1f5f9',
+                      border: `1px solid ${border}`,
                     }}>
-                      <h3 style={{ marginBottom: 16, color: '#1f2937', fontSize: 15 }}>Session Summary</h3>
+                      <h3 style={{ marginBottom: 16, color: text, fontSize: 15 }}>Session Summary</h3>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         <div style={{ display: 'flex', gap: 12 }}>
@@ -666,7 +668,7 @@ return (
           <div style={{
             textAlign: 'center',
             padding: '56px 24px',
-            background: 'white',
+            background: bgCard,
             borderRadius: 24,
             boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 20px 48px -16px rgba(15,23,42,0.10)',
             overflow: 'hidden',
@@ -714,7 +716,7 @@ return (
                 📡
               </div>
 
-              <h2 style={{ marginBottom: 12, color: '#1f2937', letterSpacing: '-0.01em' }}>
+              <h2 style={{ marginBottom: 12, color: text, letterSpacing: '-0.01em' }}>
                 {canHost ? 'Ready to go live?' : 'No live classes right now'}
               </h2>
 
@@ -804,7 +806,7 @@ return (
               key={live._id}
               className="live-card fade-in-up"
               style={{
-                background: 'white',
+                background: bgCard,
                 borderRadius: 18,
                 overflow: 'hidden',
                 boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 8px 24px -8px rgba(15,23,42,0.10)',
@@ -890,7 +892,7 @@ return (
 
                 {/* Host name */}
                 <p style={{ fontSize: 13, color: '#64748b', marginBottom: 14 }}>
-                  Hosted by <strong style={{ color: '#1f2937' }}>{live.host?.name}</strong>
+                  Hosted by <strong style={{ color: text }}>{live.host?.name}</strong>
                 </p>
 
                 {/* Level badge */}

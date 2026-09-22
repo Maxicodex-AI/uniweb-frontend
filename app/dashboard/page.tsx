@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { SkeletonDashboard } from '../components/Skeleton'
 import { getAuthToken, removeAuthToken } from '../utils/auth'
+import { useTheme } from '../context/ThemeContext'
 import Link from 'next/link'
 
 interface User {
@@ -57,6 +58,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [greeting, setGreeting] = useState('')
   const [currentTime, setCurrentTime] = useState(new Date())
+  const { isDark, bg, bgCard, text, textSecondary, border } = useTheme()
 
   const quotes = [
     '"The beautiful thing about learning is that no one can take it away from you."',
@@ -202,11 +204,11 @@ export default function DashboardPage() {
 if (loading) return <SkeletonDashboard />
 
 return (
-  <div style={{ background: '#f8fafc', minHeight: 'calc(100vh - 60px)' }}>
+  <div style={{ background: bg, minHeight: 'calc(100vh - 60px)' }}>
 
     {/* ===== GREETING BANNER ===== */}
     <div style={{
-      background: 'white', borderBottom: '1px solid #f3f4f6',
+      background: bgCard, borderBottom: `1px solid ${border}`,
       padding: '20px 24px',
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       flexWrap: 'wrap', gap: 12,
@@ -225,20 +227,20 @@ return (
             {user?.role === 'lecturer' && '👨‍🏫 Lecturer'}
             {user?.role === 'student' && `🎓 Student • ${user?.level}`}
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 2 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 2, color: text }}>
             {greeting}, {user?.name?.split(' ')[0]}! 👋
           </h1>
-          <p style={{ fontSize: 13, color: '#6b7280' }}>
+          <p style={{ fontSize: 13, color: textSecondary }}>
             {user?.department && `${user.department} • `}{user?.faculty}
           </p>
         </div>
         <div style={{
-          background: '#f9fafb', borderRadius: 12, padding: '12px 20px',
-          maxWidth: 380, border: '1px solid #f3f4f6',
+          background: bg, borderRadius: 12, padding: '12px 20px',
+          maxWidth: 380, border: `1px solid ${border}`,
           display: 'flex', alignItems: 'flex-start', gap: 12,
         }}>
           <span style={{ fontSize: 20 }}>💡</span>
-          <p style={{ fontSize: 12, color: '#6b7280', fontStyle: 'italic', lineHeight: 1.5, margin: 0 }}>
+          <p style={{ fontSize: 12, color: textSecondary, fontStyle: 'italic', lineHeight: 1.5, margin: 0 }}>
             {quote}
           </p>
         </div>
@@ -279,8 +281,8 @@ return (
             },
           ].map(stat => (
             <div key={stat.label} style={{
-              background: 'white', borderRadius: 12, padding: '16px',
-              border: '1px solid #f3f4f6', boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+              background: bgCard, borderRadius: 12, padding: '16px',
+              border: `1px solid ${border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
               display: 'flex', alignItems: 'center', gap: 12,
             }}>
               <div style={{
@@ -292,8 +294,8 @@ return (
                 {stat.icon}
               </div>
               <div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#1f2937', lineHeight: 1 }}>{stat.value}</div>
-                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{stat.label}</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: text, lineHeight: 1 }}>{stat.value}</div>
+                <div style={{ fontSize: 11, color: textSecondary, marginTop: 2 }}>{stat.label}</div>
                 <div style={{ fontSize: 10, color: stat.color, fontWeight: 600 }}>{stat.sub}</div>
               </div>
             </div>
@@ -305,9 +307,9 @@ return (
                   <div className="dashboard-three-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 300px', gap: 16, marginBottom: 20 }}>
 
             {/* TODAY'S SCHEDULE */}
-            <div style={{ background: 'white', borderRadius: 14, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f3f4f6' }}>
+            <div style={{ background: bgCard, borderRadius: 14, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: `1px solid ${border}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h2 style={{ fontSize: 15, fontWeight: 700 }}>Today's Schedule</h2>
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: text }}>Today's Schedule</h2>
                 <Link href="/timetable" style={{ fontSize: 12, color: '#16a34a' }}>View Timetable →</Link>
               </div>
               {todayClasses.length === 0 ? (
@@ -332,12 +334,12 @@ return (
                         </div>
                         <div style={{
                           flex: 1, padding: '8px 12px', borderRadius: 10, marginBottom: 8,
-                          background: active ? '#f0fdf4' : soon ? '#f5f3ff' : '#f9fafb',
-                          border: active ? '1px solid #bbf7d0' : '1px solid #f3f4f6',
+                          background: active ? '#f0fdf4' : soon ? '#f5f3ff' : bg,
+                          border: active ? '1px solid #bbf7d0' : `1px solid ${border}`,
                         }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: cls.color || '#16a34a' }}>{cls.courseCode}</div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#1f2937' }}>{cls.courseTitle}</div>
-                          <div style={{ fontSize: 11, color: '#6b7280' }}>{cls.type} • {cls.venue}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: text }}>{cls.courseTitle}</div>
+                          <div style={{ fontSize: 11, color: textSecondary }}>{cls.type} • {cls.venue}</div>
                           {active && <div style={{ fontSize: 10, color: '#16a34a', fontWeight: 700, marginTop: 3 }}>● Happening now</div>}
                           {soon && !active && <div style={{ fontSize: 10, color: '#7c3aed', fontWeight: 700, marginTop: 3 }}>🕐 Starts soon</div>}
                         </div>
@@ -348,9 +350,9 @@ return (
               )}
               {/* Live sessions */}
               {liveSessions.length > 0 && (
-                <div style={{ marginTop: 16, borderTop: '1px solid #f3f4f6', paddingTop: 16 }}>
+                <div style={{ marginTop: 16, borderTop: `1px solid ${border}`, paddingTop: 16 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <h3 style={{ fontSize: 13, fontWeight: 700 }}>Live Now</h3>
+                    <h3 style={{ fontSize: 13, fontWeight: 700, color: text }}>Live Now</h3>
                     <Link href="/live" style={{ fontSize: 11, color: '#16a34a' }}>View all →</Link>
                   </div>
                   {liveSessions.slice(0, 2).map(session => (
@@ -378,9 +380,9 @@ return (
             </div>
 
             {/* CURRENT COURSE */}
-            <div style={{ background: 'white', borderRadius: 14, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f3f4f6' }}>
+            <div style={{ background: bgCard, borderRadius: 14, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: `1px solid ${border}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h2 style={{ fontSize: 15, fontWeight: 700 }}>
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: text }}>
                   {user?.role === 'lecturer' ? 'My Teaching' : 'Current Course'}
                 </h2>
                 <Link href="/learning-hub" style={{ fontSize: 12, color: '#16a34a' }}>Go to Learning Hub →</Link>
@@ -388,7 +390,7 @@ return (
               {!currentCourse ? (
                 <div style={{ textAlign: 'center', padding: '24px 0' }}>
                   <div style={{ fontSize: 36, marginBottom: 8 }}>📚</div>
-                  <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
+                  <p style={{ fontSize: 13, color: textSecondary, marginBottom: 16 }}>
                     {user?.role === 'lecturer' ? 'No courses assigned yet' : 'No courses enrolled yet'}
                   </p>
                   <Link href="/learning-hub">
@@ -433,11 +435,11 @@ return (
                         padding: '10px 0', borderBottom: '1px solid #f9fafb', cursor: 'pointer',
                       }}>
                         <div style={{
-                          width: 32, height: 32, borderRadius: 8, background: '#f9fafb',
+                          width: 32, height: 32, borderRadius: 8, background: bg,
                           display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0,
                         }}>{item.icon}</div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#1f2937' }}>{item.label}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: text }}>{item.label}</div>
                           <div style={{ fontSize: 11, color: '#9ca3af' }}>{item.sub}</div>
                         </div>
                         <span style={{ color: '#9ca3af', fontSize: 16 }}>›</span>
@@ -450,9 +452,9 @@ return (
 
             {/* RIGHT — Progress + Announcements */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ background: 'white', borderRadius: 14, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f3f4f6' }}>
+              <div style={{ background: bgCard, borderRadius: 14, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: `1px solid ${border}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-                  <h2 style={{ fontSize: 15, fontWeight: 700 }}>Progress Overview</h2>
+                  <h2 style={{ fontSize: 15, fontWeight: 700, color: text }}>Progress Overview</h2>
                   <Link href="/learning-hub" style={{ fontSize: 11, color: '#16a34a' }}>View all →</Link>
                 </div>
                 {[
@@ -464,7 +466,7 @@ return (
                 ].map(item => (
                   <div key={item.label} style={{ marginBottom: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontSize: 11, color: '#6b7280' }}>{item.label}</span>
+                      <span style={{ fontSize: 11, color: textSecondary }}>{item.label}</span>
                       <span style={{ fontSize: 11, fontWeight: 700, color: item.color }}>{item.value}%</span>
                     </div>
                     <div style={{ height: 5, background: '#f3f4f6', borderRadius: 999, overflow: 'hidden' }}>
@@ -474,9 +476,9 @@ return (
                 ))}
               </div>
 
-              <div style={{ background: 'white', borderRadius: 14, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f3f4f6', flex: 1 }}>
+              <div style={{ background: bgCard, borderRadius: 14, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: `1px solid ${border}`, flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-                  <h2 style={{ fontSize: 15, fontWeight: 700 }}>Announcements</h2>
+                  <h2 style={{ fontSize: 15, fontWeight: 700, color: text }}>Announcements</h2>
                   <Link href="/announcements" style={{ fontSize: 11, color: '#16a34a' }}>View all →</Link>
                 </div>
                 {announcements.length === 0 ? (
@@ -492,7 +494,7 @@ return (
                         {announcementIcons[ann.priority || 'general']}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#1f2937', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {ann.title}
                         </div>
                         <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>
@@ -512,8 +514,8 @@ return (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
 
             {/* Quick actions */}
-            <div style={{ background: 'white', borderRadius: 14, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f3f4f6' }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>⚡ Quick Actions</h2>
+            <div style={{ background: bgCard, borderRadius: 14, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: `1px solid ${border}` }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, color: text }}>⚡ Quick Actions</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[
                   ...(user?.role === 'admin' ? [
@@ -536,16 +538,16 @@ return (
                   <Link key={action.href + action.label} href={action.href} style={{ textDecoration: 'none' }}>
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '12px 14px', background: '#f9fafb', borderRadius: 10,
-                      cursor: 'pointer', border: '1px solid #f3f4f6', transition: 'all 0.15s',
+                      padding: '12px 14px', background: bg, borderRadius: 10,
+                      cursor: 'pointer', border: `1px solid ${border}`, transition: 'all 0.15s',
                     }}>
                       <div style={{
                         width: 36, height: 36, borderRadius: 8, background: '#f0fdf4',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0,
                       }}>{action.icon}</div>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1f2937' }}>{action.label}</div>
-                        <div style={{ fontSize: 11, color: '#6b7280' }}>{action.sub}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: text }}>{action.label}</div>
+                        <div style={{ fontSize: 11, color: textSecondary }}>{action.sub}</div>
                       </div>
                       <span style={{ marginLeft: 'auto', color: '#9ca3af' }}>›</span>
                     </div>
@@ -555,9 +557,9 @@ return (
             </div>
 
             {/* Announcements */}
-            <div style={{ background: 'white', borderRadius: 14, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f3f4f6' }}>
+            <div style={{ background: bgCard, borderRadius: 14, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: `1px solid ${border}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <h2 style={{ fontSize: 15, fontWeight: 700 }}>📢 Announcements</h2>
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: text }}>📢 Announcements</h2>
                 <Link href="/announcements" style={{ fontSize: 12, color: '#16a34a' }}>View all →</Link>
               </div>
               {announcements.length === 0 ? (
@@ -572,12 +574,12 @@ return (
                 announcements.map(ann => (
                   <div key={ann._id} style={{
                     display: 'flex', gap: 10, marginBottom: 12, alignItems: 'flex-start',
-                    padding: '10px 12px', background: '#f9fafb', borderRadius: 8,
+                    padding: '10px 12px', background: bg, borderRadius: 8,
                     borderLeft: `3px solid ${announcementColors[ann.priority || 'general']}`,
                   }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#1f2937' }}>{ann.title}</div>
-                      <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: text }}>{ann.title}</div>
+                      <div style={{ fontSize: 11, color: textSecondary, marginTop: 2 }}>
                         {ann.content?.slice(0, 60)}...
                       </div>
                       <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 4 }}>
@@ -593,9 +595,9 @@ return (
 
         {/* ===== MY COURSES (students/lecturers) ===== */}
         {enrollments.length > 0 && (user?.role === 'student' || user?.role === 'lecturer') && (
-          <div style={{ background: 'white', borderRadius: 14, padding: 20, marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f3f4f6' }}>
+          <div style={{ background: bgCard, borderRadius: 14, padding: 20, marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: `1px solid ${border}` }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: text }}>
                 {user?.role === 'lecturer' ? '📚 My Courses' : '📚 Continue Learning'}
               </h2>
               <Link href="/learning-hub" style={{ fontSize: 12, color: '#16a34a' }}>View All →</Link>
@@ -607,7 +609,7 @@ return (
                 const color = getCourseColor(course.code)
                 return (
                   <Link key={enrollment._id} href={`/learning-hub/course/${course._id}`} style={{ textDecoration: 'none' }}>
-                    <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #f3f4f6', cursor: 'pointer' }}>
+                    <div style={{ borderRadius: 10, overflow: 'hidden', border: `1px solid ${border}`, cursor: 'pointer' }}>
                       <div style={{ background: color, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>{course.code}</div>
@@ -615,9 +617,9 @@ return (
                         </div>
                         <div style={{ fontSize: 20 }}>📚</div>
                       </div>
-                      <div style={{ padding: '10px 14px', background: 'white' }}>
+                      <div style={{ padding: '10px 14px', background: bgCard }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                          <span style={{ fontSize: 11, color: '#6b7280' }}>{course.lecturers?.[0]?.name || 'Instructor'}</span>
+                          <span style={{ fontSize: 11, color: textSecondary }}>{course.lecturers?.[0]?.name || 'Instructor'}</span>
                           <span style={{ fontSize: 11, fontWeight: 700, color }}>{enrollment.overallProgress}%</span>
                         </div>
                         <div style={{ height: 4, background: '#f3f4f6', borderRadius: 999, overflow: 'hidden' }}>

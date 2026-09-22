@@ -1,5 +1,6 @@
 import "./globals.css";
 import AppShell from "./AppShell";
+import { ThemeProvider } from './context/ThemeContext'
 
 export const metadata = {
   title: "UniWeb — Academic Platform",
@@ -15,33 +16,27 @@ export const metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-            <head>
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="UniWeb" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
         <script dangerouslySetInnerHTML={{
           __html: `
             const theme = localStorage.getItem('uniweb-theme') || 'light';
             document.documentElement.setAttribute('data-theme', theme);
           `
         }} />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
-        />
-        <meta name="apple-mobile-web-app-title" content="UniWeb" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-
       <body>
-        <AppShell>{children}</AppShell>
+        <ThemeProvider>
+          <AppShell>{children}</AppShell>
+        </ThemeProvider>
       </body>
     </html>
-  );
+  )
 }
