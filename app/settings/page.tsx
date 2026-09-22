@@ -18,7 +18,7 @@ export default function SettingsPage() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'password' | 'account' | 'appearance'>('profile')
-  const { isDark, toggleDark, bgCard, bg, text, textSecondary, border } = useTheme()
+  const { isDark, toggleDark, bgCard, bg, bgSecondary, text, textSecondary, border } = useTheme()
 
   // Profile
   const [name, setName] = useState('')
@@ -167,7 +167,7 @@ export default function SettingsPage() {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 60px)' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>⚙️</div>
-        <p style={{ color: '#4b5563' }}>Loading settings...</p>
+        <p style={{ color: textSecondary }}>Loading settings...</p>
       </div>
     </div>
   )
@@ -175,7 +175,7 @@ export default function SettingsPage() {
   return (
     <div style={{ background: bg, minHeight: 'calc(100vh - 60px)' }}>
 
-      {/* Header */}
+      {/* Header — fixed brand gradient */}
       <div style={{
         background: 'linear-gradient(135deg, #052e16, #16a34a)',
         padding: '32px 24px 80px',
@@ -213,7 +213,8 @@ export default function SettingsPage() {
             <div style={{ fontSize: 13, color: textSecondary }}>{user?.email}</div>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
-              background: '#f0fdf4', border: '1px solid #bbf7d0',
+              background: isDark ? '#052e16' : '#f0fdf4',
+              border: isDark ? '1px solid #166534' : '1px solid #bbf7d0',
               borderRadius: 999, padding: '2px 10px', marginTop: 4,
               fontSize: 12, color: '#16a34a', fontWeight: 600,
             }}>
@@ -223,7 +224,8 @@ export default function SettingsPage() {
           <button
             onClick={handleLogout}
             style={{
-              background: '#fef2f2', border: '1px solid #fecaca',
+              background: isDark ? '#450a0a' : '#fef2f2',
+              border: isDark ? '1px solid #7f1d1d' : '1px solid #fecaca',
               color: '#dc2626', borderRadius: 8, padding: '8px 16px',
               cursor: 'pointer', fontSize: 13, fontWeight: 600,
             }}
@@ -272,7 +274,7 @@ export default function SettingsPage() {
             {/* PROFILE TAB */}
             {activeTab === 'profile' && (
               <div>
-                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Profile Settings</h2>
+                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, color: text }}>Profile Settings</h2>
 
                 <label>Full Name</label>
                 <input
@@ -287,9 +289,9 @@ export default function SettingsPage() {
                   type="email"
                   value={email}
                   disabled
-                  style={{ background: '#f9fafb', color: '#9ca3af', cursor: 'not-allowed' }}
+                  style={{ background: bgSecondary, color: textSecondary, cursor: 'not-allowed' }}
                 />
-                <p style={{ fontSize: 11, color: '#9ca3af', marginTop: -8, marginBottom: 16 }}>
+                <p style={{ fontSize: 11, color: textSecondary, marginTop: -8, marginBottom: 16 }}>
                   Email cannot be changed. Contact an admin if needed.
                 </p>
 
@@ -303,8 +305,8 @@ export default function SettingsPage() {
                       style={{
                         width: 36, height: 36, borderRadius: '50%',
                         background: color, cursor: 'pointer',
-                        border: avatarColor === color ? '3px solid #1f2937' : '3px solid transparent',
-                        boxShadow: avatarColor === color ? '0 0 0 2px white, 0 0 0 4px #1f2937' : 'none',
+                        border: avatarColor === color ? `3px solid ${text}` : '3px solid transparent',
+                        boxShadow: avatarColor === color ? `0 0 0 2px ${bgCard}, 0 0 0 4px ${text}` : 'none',
                         transition: 'all 0.15s',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         color: 'white', fontSize: 14, fontWeight: 700,
@@ -317,9 +319,9 @@ export default function SettingsPage() {
 
                 {/* Preview */}
                 <div style={{
-                  background: '#f9fafb', borderRadius: 12, padding: '16px 20px',
+                  background: bgSecondary, borderRadius: 12, padding: '16px 20px',
                   marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14,
-                  border: '1px solid #f3f4f6',
+                  border: `1px solid ${border}`,
                 }}>
                   <div style={{
                     width: 48, height: 48, borderRadius: '50%',
@@ -330,10 +332,10 @@ export default function SettingsPage() {
                     {getInitials(name || user?.name || '?')}
                   </div>
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#1f2937' }}>{name || user?.name}</div>
-                    <div style={{ fontSize: 12, color: '#6b7280' }}>{user?.email}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: text }}>{name || user?.name}</div>
+                    <div style={{ fontSize: 12, color: textSecondary }}>{user?.email}</div>
                   </div>
-                  <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 'auto' }}>Preview</span>
+                  <span style={{ fontSize: 12, color: textSecondary, marginLeft: 'auto' }}>Preview</span>
                 </div>
 
                 {profileMessage && (
@@ -356,8 +358,8 @@ export default function SettingsPage() {
             {/* NOTIFICATIONS TAB */}
             {activeTab === 'notifications' && (
               <div>
-                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Notification Preferences</h2>
-                <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 24 }}>
+                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, color: text }}>Notification Preferences</h2>
+                <p style={{ fontSize: 13, color: textSecondary, marginBottom: 24 }}>
                   Choose what notifications you want to receive in your bell.
                 </p>
 
@@ -405,22 +407,22 @@ export default function SettingsPage() {
                       style={{
                         display: 'flex', alignItems: 'center', gap: 16,
                         padding: '16px 0',
-                        borderBottom: i < 3 ? '1px solid #f3f4f6' : 'none',
+                        borderBottom: i < 3 ? `1px solid ${border}` : 'none',
                       }}
                     >
                       <div style={{
                         width: 40, height: 40, borderRadius: 10,
-                        background: notif.value ? notif.color + '15' : '#f3f4f6',
+                        background: notif.value ? notif.color + '15' : bgSecondary,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 20, flexShrink: 0, transition: 'all 0.2s',
                       }}>
                         {notif.icon}
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: '#1f2937', marginBottom: 2 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: text, marginBottom: 2 }}>
                           {notif.label}
                         </div>
-                        <div style={{ fontSize: 12, color: '#9ca3af' }}>
+                        <div style={{ fontSize: 12, color: textSecondary }}>
                           {notif.desc}
                         </div>
                       </div>
@@ -429,7 +431,7 @@ export default function SettingsPage() {
                         onClick={() => notif.setValue(!notif.value)}
                         style={{
                           width: 48, height: 26, borderRadius: 999,
-                          background: notif.value ? notif.color : '#e5e7eb',
+                          background: notif.value ? notif.color : (isDark ? '#334155' : '#e5e7eb'),
                           cursor: 'pointer', position: 'relative',
                           transition: 'background 0.2s', flexShrink: 0,
                         }}
@@ -467,19 +469,19 @@ export default function SettingsPage() {
             {/* APPEARANCE TAB */}
             {activeTab === 'appearance' && (
               <div>
-                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Appearance</h2>
-                <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 24 }}>
+                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, color: text }}>Appearance</h2>
+                <p style={{ fontSize: 13, color: textSecondary, marginBottom: 24 }}>
                   Customise how UniWeb looks for you.
                 </p>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: `1px solid ${border}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
                       🌙
                     </div>
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#1f2937', marginBottom: 2 }}>Dark Mode</div>
-                      <div style={{ fontSize: 12, color: '#9ca3af' }}>Easier on the eyes at night</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: text, marginBottom: 2 }}>Dark Mode</div>
+                      <div style={{ fontSize: 12, color: textSecondary }}>Easier on the eyes at night</div>
                     </div>
                   </div>
                   <div
@@ -507,8 +509,8 @@ export default function SettingsPage() {
             {/* PASSWORD TAB */}
             {activeTab === 'password' && (
               <div>
-                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Change Password</h2>
-                <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 24 }}>
+                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, color: text }}>Change Password</h2>
+                <p style={{ fontSize: 13, color: textSecondary, marginBottom: 24 }}>
                   Choose a strong password of at least 6 characters.
                 </p>
 
@@ -527,7 +529,7 @@ export default function SettingsPage() {
                       position: 'absolute', right: 12, top: '50%',
                       transform: 'translateY(-50%)', background: 'none',
                       border: 'none', cursor: 'pointer', fontSize: 16,
-                      color: '#9ca3af',
+                      color: textSecondary,
                     }}
                   >
                     {showPasswords ? '🙈' : '👁️'}
@@ -553,8 +555,8 @@ export default function SettingsPage() {
                 {/* Password strength */}
                 {newPassword && (
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>Password strength:</div>
-                    <div style={{ height: 4, background: '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{ fontSize: 12, color: textSecondary, marginBottom: 6 }}>Password strength:</div>
+                    <div style={{ height: 4, background: isDark ? '#334155' : '#e5e7eb', borderRadius: 999, overflow: 'hidden' }}>
                       <div style={{
                         height: '100%', borderRadius: 999, transition: 'width 0.3s',
                         width: newPassword.length < 6 ? '25%' : newPassword.length < 10 ? '50%' : newPassword.length < 14 ? '75%' : '100%',
@@ -595,10 +597,13 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* ACCOUNT INFO TAB */}
+            {/* ACCOUNT INFO TAB — this was the actual invisible-text bug:
+                every value below used to hardcode color: '#1f2937' (near-black)
+                and icon chips used to hardcode background: '#f3f4f6' (near-white),
+                so on a dark card the text was dark-on-dark and unreadable. */}
             {activeTab === 'account' && (
               <div>
-                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Account Information</h2>
+                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, color: text }}>Account Information</h2>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                   {[
@@ -614,21 +619,21 @@ export default function SettingsPage() {
                     <div key={item.label} style={{
                       display: 'flex', alignItems: 'center', gap: 14,
                       padding: '14px 0',
-                      borderBottom: i < 7 ? '1px solid #f3f4f6' : 'none',
+                      borderBottom: i < 7 ? `1px solid ${border}` : 'none',
                     }}>
                       <div style={{
                         width: 36, height: 36, borderRadius: 8,
-                        background: '#f3f4f6', display: 'flex',
+                        background: bgSecondary, display: 'flex',
                         alignItems: 'center', justifyContent: 'center',
                         fontSize: 18, flexShrink: 0,
                       }}>
                         {item.icon}
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>
+                        <div style={{ fontSize: 11, color: textSecondary, fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>
                           {item.label}
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: '#1f2937' }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: text }}>
                           {item.value}
                         </div>
                       </div>
@@ -638,13 +643,15 @@ export default function SettingsPage() {
 
                 {/* Danger zone */}
                 <div style={{
-                  marginTop: 32, background: '#fef2f2',
-                  border: '1px solid #fecaca', borderRadius: 12, padding: '20px 24px',
+                  marginTop: 32,
+                  background: isDark ? '#450a0a' : '#fef2f2',
+                  border: isDark ? '1px solid #7f1d1d' : '1px solid #fecaca',
+                  borderRadius: 12, padding: '20px 24px',
                 }}>
                   <h3 style={{ fontSize: 14, fontWeight: 700, color: '#dc2626', marginBottom: 8 }}>
                     ⚠️ Danger Zone
                   </h3>
-                  <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 14, lineHeight: 1.5 }}>
+                  <p style={{ fontSize: 13, color: textSecondary, marginBottom: 14, lineHeight: 1.5 }}>
                     Logging out will end your current session. You can log back in anytime.
                   </p>
                   <button

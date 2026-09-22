@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getAuthToken } from '../utils/auth'
+import { useTheme } from '../context/ThemeContext' // adjust path to match your project structure
 
 interface TimetableEntry {
   _id: string
@@ -60,6 +61,8 @@ const EVENT_COLORS: Record<string, string> = {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
 export default function TimetablePage() {
+  const { bg, bgCard, bgSecondary, text, textSecondary, border, isDark } = useTheme()
+
   const [mainTab, setMainTab] = useState<'department' | 'personal'>('department')
   const [timetables, setTimetables] = useState<Timetable[]>([])
   const [user, setUser] = useState<any>(null)
@@ -399,12 +402,12 @@ useEffect(() => {
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 60px)' }}>
-      <p style={{ color: '#6b7280' }}>Loading timetable...</p>
+      <p style={{ color: textSecondary }}>Loading timetable...</p>
     </div>
   )
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: 'calc(100vh - 60px)' }}>
+    <div style={{ background: bg, minHeight: 'calc(100vh - 60px)' }}>
 
       {/* ===== MODALS — rendered at top level with high z-index ===== */}
 
@@ -414,8 +417,8 @@ useEffect(() => {
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
           zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
         }}>
-          <div style={{ background: 'white', borderRadius: 16, padding: 28, width: '100%', maxWidth: 420 }}>
-            <h3 style={{ marginBottom: 20, fontSize: 17 }}>📅 Create Timetable</h3>
+          <div style={{ background: bgCard, borderRadius: 16, padding: 28, width: '100%', maxWidth: 420 }}>
+            <h3 style={{ marginBottom: 20, fontSize: 17, color: text }}>📅 Create Timetable</h3>
             <form onSubmit={handleCreateTimetable}>
               {user?.role !== 'student' && availableLevels.length > 0 && (
                 <>
@@ -454,10 +457,10 @@ useEffect(() => {
           zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
         }}>
           <div style={{
-            background: 'white', borderRadius: 16, padding: 28,
+            background: bgCard, borderRadius: 16, padding: 28,
             width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto',
           }}>
-            <h3 style={{ marginBottom: 20, fontSize: 17 }}>+ Add Class to Timetable</h3>
+            <h3 style={{ marginBottom: 20, fontSize: 17, color: text }}>+ Add Class to Timetable</h3>
             <form onSubmit={handleAddEntry}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
@@ -541,7 +544,7 @@ useEffect(() => {
                   <span style={{ fontSize: 11, fontWeight: 700, color: TYPE_COLORS[newEntry.type] }}>
                     {newEntry.courseCode || 'CODE'}
                   </span>
-                  <span style={{ fontSize: 12, color: '#374151' }}>
+                  <span style={{ fontSize: 12, color: text }}>
                     {newEntry.courseTitle || 'Course Title'} • {newEntry.day} {formatTime(newEntry.startTime)}
                   </span>
                 </div>
@@ -567,10 +570,10 @@ useEffect(() => {
           zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
         }}>
           <div style={{
-            background: 'white', borderRadius: 16, padding: 28,
+            background: bgCard, borderRadius: 16, padding: 28,
             width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto',
           }}>
-            <h3 style={{ marginBottom: 20, fontSize: 17 }}>📋 Add Personal Event</h3>
+            <h3 style={{ marginBottom: 20, fontSize: 17, color: text }}>📋 Add Personal Event</h3>
             <form onSubmit={handleAddEvent}>
 
               <label>Event Title *</label>
@@ -596,8 +599,8 @@ useEffect(() => {
                     onClick={() => setNewEvent({ ...newEvent, type: opt.value, color: EVENT_COLORS[opt.value] })}
                     style={{
                       padding: '6px 12px', borderRadius: 8, border: 'none',
-                      background: newEvent.type === opt.value ? EVENT_COLORS[opt.value] : '#f3f4f6',
-                      color: newEvent.type === opt.value ? 'white' : '#374151',
+                      background: newEvent.type === opt.value ? EVENT_COLORS[opt.value] : bgSecondary,
+                      color: newEvent.type === opt.value ? 'white' : text,
                       cursor: 'pointer', fontSize: 12, fontWeight: 600,
                     }}
                   >
@@ -660,7 +663,7 @@ useEffect(() => {
               {/* Recurring toggle */}
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 14px', background: '#f9fafb', borderRadius: 8, margin: '12px 0',
+                padding: '10px 14px', background: bgSecondary, borderRadius: 8, margin: '12px 0',
               }}>
                 <div
                   onClick={() => setNewEvent({ ...newEvent, isRecurring: !newEvent.isRecurring })}
@@ -679,7 +682,7 @@ useEffect(() => {
                     boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                   }} />
                 </div>
-                <label style={{ cursor: 'pointer', fontWeight: 500, fontSize: 14 }}>
+                <label style={{ cursor: 'pointer', fontWeight: 500, fontSize: 14, color: text }}>
                   🔄 Recurring event
                 </label>
               </div>
@@ -699,8 +702,8 @@ useEffect(() => {
                         }}
                         style={{
                           padding: '5px 12px', borderRadius: 6, border: 'none',
-                          background: newEvent.recurringDays.includes(day) ? '#16a34a' : '#f3f4f6',
-                          color: newEvent.recurringDays.includes(day) ? 'white' : '#374151',
+                          background: newEvent.recurringDays.includes(day) ? '#16a34a' : bgSecondary,
+                          color: newEvent.recurringDays.includes(day) ? 'white' : text,
                           cursor: 'pointer', fontSize: 12, fontWeight: 600,
                         }}
                       >
@@ -725,7 +728,7 @@ useEffect(() => {
       )}
 
 
-      {/* ===== HERO ===== */}
+      {/* ===== HERO — fixed brand gradient ===== */}
       <div style={{
         background: 'linear-gradient(135deg, #052e16 0%, #14532d 50%, #166534 100%)',
         padding: '32px 24px 40px', position: 'relative', overflow: 'hidden',
@@ -746,10 +749,10 @@ useEffect(() => {
       {/* ===== FACULTY ADMIN — Department selector ===== */}
       {user?.role === 'faculty_admin' && deptsList.length > 0 && (
         <div style={{
-          background: 'white', borderRadius: 12, padding: '16px 20px',
+          background: bgCard, borderRadius: 12, padding: '16px 20px',
           marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
         }}>
-          <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 10, fontWeight: 600 }}>
+          <p style={{ fontSize: 12, color: textSecondary, marginBottom: 10, fontWeight: 600 }}>
             📋 Viewing timetable for:
           </p>
           {/* Department + Level selector */}
@@ -762,10 +765,10 @@ useEffect(() => {
         onClick={() => setSelectedDept(dept.name)}
         style={{
           padding: '6px 14px', borderRadius: 8,
-          background: selectedDept === dept.name ? '#052e16' : '#f9fafb',
-          color: selectedDept === dept.name ? 'white' : '#374151',
+          background: selectedDept === dept.name ? '#052e16' : bgSecondary,
+          color: selectedDept === dept.name ? 'white' : text,
           cursor: 'pointer', fontSize: 12, fontWeight: 600,
-          border: selectedDept === dept.name ? 'none' : '1px solid #e5e7eb',
+          border: selectedDept === dept.name ? 'none' : `1px solid ${border}`,
         }}
       >
         {dept.name}
@@ -777,9 +780,9 @@ useEffect(() => {
   {deptLevels.length > 0 && (
     <div style={{
       display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center',
-      paddingTop: 10, borderTop: '1px solid #f3f4f6',
+      paddingTop: 10, borderTop: `1px solid ${border}`,
     }}>
-      <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, marginRight: 4 }}>
+      <span style={{ fontSize: 11, color: textSecondary, fontWeight: 600, marginRight: 4 }}>
         Level:
       </span>
       {deptLevels.map(level => (
@@ -788,10 +791,10 @@ useEffect(() => {
           onClick={() => setSelectedDeptLevel(level)}
           style={{
             padding: '6px 12px', borderRadius: 8,
-            background: selectedDeptLevel === level ? '#16a34a' : '#f9fafb',
-            color: selectedDeptLevel === level ? 'white' : '#374151',
+            background: selectedDeptLevel === level ? '#16a34a' : bgSecondary,
+            color: selectedDeptLevel === level ? 'white' : text,
             cursor: 'pointer', fontSize: 12, fontWeight: 600,
-            border: selectedDeptLevel === level ? 'none' : '1px solid #e5e7eb',
+            border: selectedDeptLevel === level ? 'none' : `1px solid ${border}`,
           }}
         >
           {level}
@@ -806,15 +809,15 @@ useEffect(() => {
     ✅ Showing timetable for {selectedDept} • {selectedDeptLevel}
   </div>
 ) : selectedDept && selectedDeptLevel ? (
-  <div style={{ marginTop: 10, fontSize: 12, color: '#9ca3af' }}>
+  <div style={{ marginTop: 10, fontSize: 12, color: textSecondary }}>
     No timetable found for {selectedDept} • {selectedDeptLevel}
   </div>
 ) : selectedDept ? (
-  <div style={{ marginTop: 10, fontSize: 12, color: '#9ca3af' }}>
+  <div style={{ marginTop: 10, fontSize: 12, color: textSecondary }}>
     Select a level to view its timetable
   </div>
 ) : (
-  <div style={{ marginTop: 10, fontSize: 12, color: '#9ca3af' }}>
+  <div style={{ marginTop: 10, fontSize: 12, color: textSecondary }}>
     Select a department to get started
   </div>
 )}
@@ -827,19 +830,20 @@ useEffect(() => {
         {/* Notifications */}
         {notifications.map(n => (
           <div key={n.id} style={{
-            background: '#f0fdf4', border: '1px solid #bbf7d0',
+            background: isDark ? '#052e16' : '#f0fdf4',
+            border: isDark ? '1px solid #166534' : '1px solid #bbf7d0',
             borderRadius: 10, padding: '10px 16px', marginBottom: 10,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
-            <span style={{ fontSize: 14, color: '#15803d', fontWeight: 500 }}>{n.message}</span>
+            <span style={{ fontSize: 14, color: isDark ? '#86efac' : '#15803d', fontWeight: 500 }}>{n.message}</span>
             <button onClick={() => setNotifications(prev => prev.filter(x => x.id !== n.id))}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 18 }}>×</button>
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: textSecondary, fontSize: 18 }}>×</button>
           </div>
         ))}
 
         {/* Tab switcher */}
         <div style={{
-          display: 'flex', background: 'white', borderRadius: 12,
+          display: 'flex', background: bgCard, borderRadius: 12,
           padding: 4, gap: 4, marginBottom: 20, width: 'fit-content',
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
         }}>
@@ -850,7 +854,7 @@ useEffect(() => {
             <button key={tab.key} onClick={() => setMainTab(tab.key as any)} style={{
               padding: '8px 20px', borderRadius: 8, border: 'none',
               background: mainTab === tab.key ? '#16a34a' : 'transparent',
-              color: mainTab === tab.key ? 'white' : '#6b7280',
+              color: mainTab === tab.key ? 'white' : textSecondary,
               cursor: 'pointer', fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
             }}>
               {tab.label}
@@ -873,8 +877,8 @@ useEffect(() => {
                   {availableLevels.map(level => (
                     <button key={level} onClick={() => setActiveLevel(level)} style={{
                       padding: '6px 14px', borderRadius: 8, border: 'none',
-                      background: activeLevel === level ? '#052e16' : 'white',
-                      color: activeLevel === level ? 'white' : '#374151',
+                      background: activeLevel === level ? '#052e16' : bgCard,
+                      color: activeLevel === level ? 'white' : text,
                       cursor: 'pointer', fontSize: 13, fontWeight: 600,
                       boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
                     }}>
@@ -889,8 +893,8 @@ useEffect(() => {
                 {['week', 'list'].map(v => (
                   <button key={v} onClick={() => setView(v as any)} style={{
                     padding: '6px 14px', borderRadius: 8, border: 'none',
-                    background: view === v ? '#16a34a' : 'white',
-                    color: view === v ? 'white' : '#374151',
+                    background: view === v ? '#16a34a' : bgCard,
+                    color: view === v ? 'white' : text,
                     cursor: 'pointer', fontSize: 12, fontWeight: 600,
                     boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
                   }}>
@@ -919,16 +923,16 @@ useEffect(() => {
             {/* No timetable */}
             {!displayTimetable && (
               <div style={{
-                background: 'white', borderRadius: 16, padding: '48px 24px',
+                background: bgCard, borderRadius: 16, padding: '48px 24px',
                 textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
               }}>
                 <div style={{ fontSize: 64, marginBottom: 16 }}>📅</div>
-                <h3 style={{ marginBottom: 8 }}>
+                <h3 style={{ marginBottom: 8, color: text }}>
                   {user?.role === 'faculty_admin'
                     ? (selectedDept && selectedDeptLevel ? `No timetable for ${selectedDept} • ${selectedDeptLevel}` : 'Select a department and level')
                     : (activeLevel ? `No timetable for ${activeLevel}` : 'No timetable yet')}
                 </h3>
-                <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 20 }}>
+                <p style={{ color: textSecondary, fontSize: 14, marginBottom: 20 }}>
                   {canManage ? 'Create a timetable to get started.' : 'Your department admin hasn\'t uploaded the timetable yet.'}
                 </p>
                 {canManage && user?.role !== 'faculty_admin' && (
@@ -942,22 +946,22 @@ useEffect(() => {
               <div>
                 {/* Status bar */}
                 <div style={{
-                  background: 'white', borderRadius: 12, padding: '12px 20px', marginBottom: 16,
+                  background: bgCard, borderRadius: 12, padding: '12px 20px', marginBottom: 16,
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   flexWrap: 'wrap', gap: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                 }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1f2937' }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: text }}>
                       {displayTimetable.department} • {displayTimetable.level}
                     </div>
-                    <div style={{ fontSize: 12, color: '#9ca3af' }}>
+                    <div style={{ fontSize: 12, color: textSecondary }}>
                       {displayTimetable.semester} • Updated by {displayTimetable.lastUpdatedBy?.name || 'N/A'}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{
-                      background: displayTimetable.isPublished ? '#f0fdf4' : '#fef3c7',
-                      color: displayTimetable.isPublished ? '#16a34a' : '#92400e',
+                      background: displayTimetable.isPublished ? (isDark ? '#052e16' : '#f0fdf4') : (isDark ? '#451a03' : '#fef3c7'),
+                      color: displayTimetable.isPublished ? '#16a34a' : (isDark ? '#fbbf24' : '#92400e'),
                       padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600,
                     }}>
                       {displayTimetable.isPublished ? '✅ Published' : '⏳ Draft'}
@@ -975,26 +979,26 @@ useEffect(() => {
                   {TYPES.map(type => (
                     <div key={type} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                       <div style={{ width: 10, height: 10, borderRadius: 2, background: TYPE_COLORS[type] }} />
-                      <span style={{ fontSize: 12, color: '#6b7280' }}>{type}</span>
+                      <span style={{ fontSize: 12, color: textSecondary }}>{type}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* WEEK VIEW */}
                 {view === 'week' && (
-                  <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 4px 16px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+                  <div style={{ background: bgCard, borderRadius: 16, boxShadow: '0 4px 16px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
                         <thead>
-                          <tr style={{ background: '#f9fafb' }}>
-                            <th style={{ padding: '12px 16px', fontSize: 11, color: '#9ca3af', fontWeight: 600, textAlign: 'left', width: 80, borderBottom: '1px solid #f3f4f6' }}>
+                          <tr style={{ background: bgSecondary }}>
+                            <th style={{ padding: '12px 16px', fontSize: 11, color: textSecondary, fontWeight: 600, textAlign: 'left', width: 80, borderBottom: `1px solid ${border}` }}>
                               Time
                             </th>
                             {DAYS.map(day => (
                               <th key={day} style={{
                                 padding: '12px 8px', fontSize: 12, fontWeight: 700,
-                                color: '#1f2937', textAlign: 'center',
-                                borderBottom: '1px solid #f3f4f6', borderLeft: '1px solid #f3f4f6', minWidth: 110,
+                                color: text, textAlign: 'center',
+                                borderBottom: `1px solid ${border}`, borderLeft: `1px solid ${border}`, minWidth: 110,
                               }}>
                                 {day.slice(0, 3)}
                               </th>
@@ -1003,15 +1007,15 @@ useEffect(() => {
                         </thead>
                         <tbody>
                           {TIMES.map(time => (
-                            <tr key={time} style={{ borderBottom: '1px solid #f9fafb' }}>
-                              <td style={{ padding: '6px 16px', fontSize: 10, color: '#9ca3af', fontWeight: 500, verticalAlign: 'top', paddingTop: 10 }}>
+                            <tr key={time} style={{ borderBottom: `1px solid ${border}` }}>
+                              <td style={{ padding: '6px 16px', fontSize: 10, color: textSecondary, fontWeight: 500, verticalAlign: 'top', paddingTop: 10 }}>
                                 {formatTime(time)}
                               </td>
                               {DAYS.map(day => {
                                 const entry = getEntryForSlot(day, time, displayTimetable)
                                 const isStart = entry?.startTime === time
                                 return (
-                                  <td key={day} style={{ padding: 3, verticalAlign: 'top', borderLeft: '1px solid #f9fafb', minWidth: 110 }}>
+                                  <td key={day} style={{ padding: 3, verticalAlign: 'top', borderLeft: `1px solid ${border}`, minWidth: 110 }}>
                                     {entry && isStart && (
                                       <div style={{
                                         background: entry.color + '15',
@@ -1020,18 +1024,18 @@ useEffect(() => {
                                         borderRadius: 6, padding: '6px 8px', position: 'relative',
                                       }}>
                                         <div style={{ fontSize: 10, fontWeight: 700, color: entry.color }}>{entry.courseCode}</div>
-                                        <div style={{ fontSize: 11, fontWeight: 600, color: '#1f2937', marginTop: 1 }}>{entry.courseTitle}</div>
-                                        <div style={{ fontSize: 9, color: '#6b7280', marginTop: 1 }}>📍 {entry.venue}</div>
-                                        <div style={{ fontSize: 9, color: '#9ca3af' }}>{formatTime(entry.startTime)} – {formatTime(entry.endTime)}</div>
+                                        <div style={{ fontSize: 11, fontWeight: 600, color: text, marginTop: 1 }}>{entry.courseTitle}</div>
+                                        <div style={{ fontSize: 9, color: textSecondary, marginTop: 1 }}>📍 {entry.venue}</div>
+                                        <div style={{ fontSize: 9, color: textSecondary }}>{formatTime(entry.startTime)} – {formatTime(entry.endTime)}</div>
                                         {entry.type === 'Live' && (
-                                          <div style={{ fontSize: 8, fontWeight: 700, color: '#dc2626', background: '#fef2f2', borderRadius: 3, padding: '1px 4px', marginTop: 2, display: 'inline-block' }}>
+                                          <div style={{ fontSize: 8, fontWeight: 700, color: '#dc2626', background: isDark ? '#450a0a' : '#fef2f2', borderRadius: 3, padding: '1px 4px', marginTop: 2, display: 'inline-block' }}>
                                             ● LIVE
                                           </div>
                                         )}
                                         {canManage && (
                                           <button
                                             onClick={() => handleRemoveEntry(entry._id)}
-                                            style={{ position: 'absolute', top: 3, right: 3, background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 1 }}
+                                            style={{ position: 'absolute', top: 3, right: 3, background: 'none', border: 'none', color: textSecondary, cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 1 }}
                                           >×</button>
                                         )}
                                       </div>
@@ -1051,9 +1055,9 @@ useEffect(() => {
                 {view === 'list' && (
                   <div>
                     {displayTimetable.entries.length === 0 ? (
-                      <div style={{ background: 'white', borderRadius: 16, padding: '40px 24px', textAlign: 'center' }}>
+                      <div style={{ background: bgCard, borderRadius: 16, padding: '40px 24px', textAlign: 'center' }}>
                         <div style={{ fontSize: 48, marginBottom: 12 }}>📅</div>
-                        <h3>No classes added yet</h3>
+                        <h3 style={{ color: text }}>No classes added yet</h3>
                         {canManage && <button className="btn-primary" onClick={() => setShowAddEntry(true)} style={{ marginTop: 12 }}>+ Add First Class</button>}
                       </div>
                     ) : (
@@ -1064,12 +1068,12 @@ useEffect(() => {
                         if (dayEntries.length === 0) return null
                         return (
                           <div key={day} style={{ marginBottom: 20 }}>
-                            <h3 style={{ fontSize: 13, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+                            <h3 style={{ fontSize: 13, color: textSecondary, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
                               {day}
                             </h3>
                             {dayEntries.map(entry => (
                               <div key={entry._id} style={{
-                                background: 'white', borderRadius: 10, padding: '12px 16px', marginBottom: 8,
+                                background: bgCard, borderRadius: 10, padding: '12px 16px', marginBottom: 8,
                                 display: 'flex', alignItems: 'center', gap: 14,
                                 boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
                                 borderLeft: `4px solid ${entry.color}`,
@@ -1084,17 +1088,17 @@ useEffect(() => {
                                 <div style={{ flex: 1 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                                     <span style={{ fontSize: 11, fontWeight: 700, color: entry.color }}>{entry.courseCode}</span>
-                                    <span style={{ fontSize: 11, color: '#9ca3af' }}>• {formatTime(entry.startTime)} – {formatTime(entry.endTime)}</span>
+                                    <span style={{ fontSize: 11, color: textSecondary }}>• {formatTime(entry.startTime)} – {formatTime(entry.endTime)}</span>
                                   </div>
-                                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1f2937' }}>{entry.courseTitle}</div>
-                                  <div style={{ fontSize: 12, color: '#6b7280' }}>👨‍🏫 {entry.lecturer} • 📍 {entry.venue}</div>
+                                  <div style={{ fontSize: 14, fontWeight: 700, color: text }}>{entry.courseTitle}</div>
+                                  <div style={{ fontSize: 12, color: textSecondary }}>👨‍🏫 {entry.lecturer} • 📍 {entry.venue}</div>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                   <span style={{ background: entry.color + '15', color: entry.color, padding: '3px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600 }}>
                                     {entry.type}
                                   </span>
                                   {canManage && (
-                                    <button onClick={() => handleRemoveEntry(entry._id)} style={{ background: '#fef2f2', border: 'none', borderRadius: 6, color: '#ef4444', padding: '4px 8px', cursor: 'pointer', fontSize: 12 }}>
+                                    <button onClick={() => handleRemoveEntry(entry._id)} style={{ background: isDark ? '#450a0a' : '#fef2f2', border: 'none', borderRadius: 6, color: '#ef4444', padding: '4px 8px', cursor: 'pointer', fontSize: 12 }}>
                                       ✕
                                     </button>
                                   )}
@@ -1119,15 +1123,17 @@ useEffect(() => {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 2 }}>My Personal Planner</h2>
-                <p style={{ fontSize: 13, color: '#6b7280' }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 2, color: text }}>My Personal Planner</h2>
+                <p style={{ fontSize: 13, color: textSecondary }}>
                   {personalEvents.filter(e => !e.isCompleted).length} upcoming •
                   {completedEvents.length} completed
                 </p>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={requestNotificationPermission} style={{
-                  background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a',
+                  background: isDark ? '#052e16' : '#f0fdf4',
+                  border: isDark ? '1px solid #166534' : '1px solid #bbf7d0',
+                  color: '#16a34a',
                   borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600,
                 }}>
                   🔔 Enable Reminders
@@ -1139,10 +1145,10 @@ useEffect(() => {
             </div>
 
             {personalEvents.length === 0 ? (
-              <div style={{ background: 'white', borderRadius: 16, padding: '48px 24px', textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
+              <div style={{ background: bgCard, borderRadius: 16, padding: '48px 24px', textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
                 <div style={{ fontSize: 64, marginBottom: 16 }}>📋</div>
-                <h3 style={{ marginBottom: 8 }}>Your planner is empty</h3>
-                <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 20 }}>
+                <h3 style={{ marginBottom: 8, color: text }}>Your planner is empty</h3>
+                <p style={{ color: textSecondary, fontSize: 14, marginBottom: 20 }}>
                   Add study sessions, deadlines, and reminders to stay organized.
                 </p>
                 <button className="btn-primary" onClick={() => setShowAddEvent(true)}>+ Add First Event</button>
@@ -1165,7 +1171,7 @@ useEffect(() => {
                 {/* Upcoming */}
                 {upcomingEvents.length > 0 && (
                   <div style={{ marginBottom: 24 }}>
-                    <h3 style={{ fontSize: 13, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+                    <h3 style={{ fontSize: 13, fontWeight: 700, color: textSecondary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
                       Upcoming ({upcomingEvents.length})
                     </h3>
                     {upcomingEvents.map(e => <EventCard key={e._id} event={e} onComplete={markComplete} onDelete={deleteEvent} />)}
@@ -1175,7 +1181,7 @@ useEffect(() => {
                 {/* Completed */}
                 {completedEvents.length > 0 && (
                   <div>
-                    <h3 style={{ fontSize: 13, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+                    <h3 style={{ fontSize: 13, fontWeight: 700, color: textSecondary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
                       Completed ({completedEvents.length})
                     </h3>
                     {completedEvents.map(e => <EventCard key={e._id} event={e} onComplete={markComplete} onDelete={deleteEvent} />)}
@@ -1192,11 +1198,14 @@ useEffect(() => {
 }
 
 // ===== EVENT CARD COMPONENT =====
+// Calls useTheme() itself since it renders inside the same ThemeProvider tree.
 function EventCard({ event, onComplete, onDelete }: {
   event: PersonalEvent
   onComplete: (id: string) => void
   onDelete: (id: string) => void
 }) {
+  const { bgCard, text, textSecondary, isDark } = useTheme()
+
   const typeIcons: Record<string, string> = {
     study: '📚', meeting: '🤝', deadline: '⏰',
     reminder: '🔔', class: '🎓', other: '📌',
@@ -1207,7 +1216,7 @@ function EventCard({ event, onComplete, onDelete }: {
 
   return (
     <div style={{
-      background: 'white', borderRadius: 12, padding: '14px 16px', marginBottom: 8,
+      background: bgCard, borderRadius: 12, padding: '14px 16px', marginBottom: 8,
       display: 'flex', alignItems: 'center', gap: 14,
       boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
       borderLeft: `4px solid ${event.color || '#16a34a'}`,
@@ -1231,21 +1240,21 @@ function EventCard({ event, onComplete, onDelete }: {
               {event.courseCode}
             </span>
           )}
-          <span style={{ fontSize: 11, color: '#9ca3af' }}>
+          <span style={{ fontSize: 11, color: textSecondary }}>
             {formatDate(event.date)} • {event.startTime}
             {event.endTime ? ` – ${event.endTime}` : ''}
           </span>
         </div>
         <div style={{
-          fontSize: 14, fontWeight: 600, color: '#1f2937',
+          fontSize: 14, fontWeight: 600, color: text,
           textDecoration: event.isCompleted ? 'line-through' : 'none',
         }}>
           {event.title}
         </div>
         {event.description && (
-          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{event.description}</div>
+          <div style={{ fontSize: 12, color: textSecondary, marginTop: 2 }}>{event.description}</div>
         )}
-        <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3, display: 'flex', gap: 8 }}>
+        <div style={{ fontSize: 11, color: textSecondary, marginTop: 3, display: 'flex', gap: 8 }}>
           <span>🔔 {event.reminderMinutes}min reminder</span>
           {event.isRecurring && <span>🔄 Recurring</span>}
         </div>
@@ -1254,14 +1263,14 @@ function EventCard({ event, onComplete, onDelete }: {
       <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
         {!event.isCompleted && (
           <button onClick={() => onComplete(event._id)} style={{
-            background: '#f0fdf4', border: 'none', borderRadius: 6,
+            background: isDark ? '#052e16' : '#f0fdf4', border: 'none', borderRadius: 6,
             color: '#16a34a', padding: '6px 10px', cursor: 'pointer', fontSize: 12,
           }}>
             ✓ Done
           </button>
         )}
         <button onClick={() => onDelete(event._id)} style={{
-          background: '#fef2f2', border: 'none', borderRadius: 6,
+          background: isDark ? '#450a0a' : '#fef2f2', border: 'none', borderRadius: 6,
           color: '#ef4444', padding: '6px 10px', cursor: 'pointer', fontSize: 12,
         }}>
           🗑️

@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { getAuthToken } from '../utils/auth'
+import { useTheme } from '../context/ThemeContext' // adjust path to match your project structure
 
 export default function CoursesPage() {
+  const { bg, bgCard, text, textSecondary, border } = useTheme()
   const [courses, setCourses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
@@ -22,7 +24,8 @@ export default function CoursesPage() {
   }, [])
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: 'calc(100vh - 60px)' }}>
+    <div style={{ background: bg, minHeight: 'calc(100vh - 60px)' }}>
+      {/* Header — fixed brand gradient */}
       <div style={{
         background: 'linear-gradient(135deg, #052e16, #166534)',
         padding: '32px 24px 60px',
@@ -39,16 +42,16 @@ export default function CoursesPage() {
       <div style={{ maxWidth: 960, margin: '-28px auto 0', padding: '0 24px 40px', position: 'relative', zIndex: 1 }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40 }}>
-            <p style={{ color: '#6b7280' }}>Loading courses...</p>
+            <p style={{ color: textSecondary }}>Loading courses...</p>
           </div>
         ) : courses.length === 0 ? (
           <div style={{
-            background: 'white', borderRadius: 16, padding: '48px 24px',
+            background: bgCard, borderRadius: 16, padding: '48px 24px',
             textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
           }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>📚</div>
-            <h3 style={{ marginBottom: 8 }}>No courses available yet</h3>
-            <p style={{ color: '#6b7280', marginBottom: 20 }}>
+            <h3 style={{ marginBottom: 8, color: text }}>No courses available yet</h3>
+            <p style={{ color: textSecondary, marginBottom: 20 }}>
               Courses will appear here once created by your admin or faculty.
             </p>
             <Link href="/learning-hub">
@@ -68,8 +71,8 @@ export default function CoursesPage() {
                 style={{ textDecoration: 'none' }}
               >
                 <div style={{
-                  background: 'white', borderRadius: 14,
-                  padding: '20px', border: '1px solid #f3f4f6',
+                  background: bgCard, borderRadius: 14,
+                  padding: '20px', border: `1px solid ${border}`,
                   boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                   cursor: 'pointer',
                 }}>
@@ -79,11 +82,11 @@ export default function CoursesPage() {
                   }}>
                     {course.code}
                   </div>
-                  <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 8, color: text }}>
                     {course.title}
                   </h3>
                   {course.description && (
-                    <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.5 }}>
+                    <p style={{ fontSize: 13, color: textSecondary, lineHeight: 1.5 }}>
                       {course.description.slice(0, 80)}...
                     </p>
                   )}

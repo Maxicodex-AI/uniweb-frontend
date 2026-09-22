@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { getAuthToken } from '../utils/auth'
 import Link from 'next/link'
+import { useTheme } from '../context/ThemeContext' // adjust path to match your project structure
 
 interface Lesson {
   _id: string
@@ -23,6 +24,8 @@ interface Enrollment {
 }
 
 export default function DocumentsPage() {
+  const { bg, bgCard, text, textSecondary, border, isDark } = useTheme()
+
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [loading, setLoading] = useState(true)
@@ -101,9 +104,9 @@ export default function DocumentsPage() {
   })
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: 'calc(100vh - 60px)' }}>
+    <div style={{ background: bg, minHeight: 'calc(100vh - 60px)' }}>
 
-      {/* Hero */}
+      {/* Hero — fixed brand gradient, translucent stat chips work on any background */}
       <div style={{
         background: 'linear-gradient(135deg, #052e16 0%, #14532d 100%)',
         padding: '32px 24px 60px', position: 'relative', overflow: 'hidden',
@@ -151,7 +154,7 @@ export default function DocumentsPage() {
 
         {/* Search + Filter */}
         <div style={{
-          background: 'white', borderRadius: 12, padding: '12px 16px',
+          background: bgCard, borderRadius: 12, padding: '12px 16px',
           marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10,
           boxShadow: '0 2px 8px rgba(0,0,0,0.06)', flexWrap: 'wrap',
         }}>
@@ -162,7 +165,7 @@ export default function DocumentsPage() {
             onChange={e => setSearch(e.target.value)}
             style={{
               flex: 1, border: 'none', outline: 'none',
-              fontSize: 14, color: '#374151', minWidth: 120,
+              fontSize: 14, color: text, minWidth: 120, background: 'transparent',
             }}
           />
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -170,8 +173,8 @@ export default function DocumentsPage() {
               onClick={() => setActiveFilter('all')}
               style={{
                 padding: '4px 12px', borderRadius: 999, border: 'none',
-                background: activeFilter === 'all' ? '#16a34a' : '#f3f4f6',
-                color: activeFilter === 'all' ? 'white' : '#374151',
+                background: activeFilter === 'all' ? '#16a34a' : (isDark ? '#1e293b' : '#f3f4f6'),
+                color: activeFilter === 'all' ? 'white' : text,
                 cursor: 'pointer', fontSize: 12, fontWeight: 600,
               }}
             >
@@ -183,8 +186,8 @@ export default function DocumentsPage() {
                 onClick={() => setActiveFilter(code)}
                 style={{
                   padding: '4px 12px', borderRadius: 999, border: 'none',
-                  background: activeFilter === code ? '#16a34a' : '#f3f4f6',
-                  color: activeFilter === code ? 'white' : '#374151',
+                  background: activeFilter === code ? '#16a34a' : (isDark ? '#1e293b' : '#f3f4f6'),
+                  color: activeFilter === code ? 'white' : text,
                   cursor: 'pointer', fontSize: 12, fontWeight: 600,
                 }}
               >
@@ -197,19 +200,19 @@ export default function DocumentsPage() {
         {/* Loading */}
         {loading && (
           <div style={{ textAlign: 'center', padding: 40 }}>
-            <p style={{ color: '#6b7280' }}>Loading your materials...</p>
+            <p style={{ color: textSecondary }}>Loading your materials...</p>
           </div>
         )}
 
         {/* No enrollments */}
         {!loading && enrollments.length === 0 && (
           <div style={{
-            background: 'white', borderRadius: 16, padding: '48px 24px',
+            background: bgCard, borderRadius: 16, padding: '48px 24px',
             textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
           }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>📚</div>
-            <h3 style={{ marginBottom: 8 }}>No materials yet</h3>
-            <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 20 }}>
+            <h3 style={{ marginBottom: 8, color: text }}>No materials yet</h3>
+            <p style={{ color: textSecondary, fontSize: 14, marginBottom: 20 }}>
               Enroll in courses to see your lesson materials here.
             </p>
             <Link href="/learning-hub">
@@ -221,12 +224,12 @@ export default function DocumentsPage() {
         {/* No lessons */}
         {!loading && enrollments.length > 0 && lessons.length === 0 && (
           <div style={{
-            background: 'white', borderRadius: 16, padding: '48px 24px',
+            background: bgCard, borderRadius: 16, padding: '48px 24px',
             textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
           }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
-            <h3 style={{ marginBottom: 8 }}>No materials published yet</h3>
-            <p style={{ color: '#6b7280', fontSize: 14 }}>
+            <h3 style={{ marginBottom: 8, color: text }}>No materials published yet</h3>
+            <p style={{ color: textSecondary, fontSize: 14 }}>
               Your lecturers haven't published any lesson materials yet. Check back soon.
             </p>
           </div>
@@ -235,7 +238,7 @@ export default function DocumentsPage() {
         {/* Materials list */}
         {!loading && filtered.length > 0 && (
           <div style={{
-            background: 'white', borderRadius: 16,
+            background: bgCard, borderRadius: 16,
             boxShadow: '0 4px 16px rgba(0,0,0,0.06)', overflow: 'hidden',
           }}>
             {filtered.map((lesson, i) => (
@@ -247,13 +250,13 @@ export default function DocumentsPage() {
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 14,
                   padding: '16px 20px',
-                  borderBottom: i < filtered.length - 1 ? '1px solid #f9fafb' : 'none',
+                  borderBottom: i < filtered.length - 1 ? `1px solid ${border}` : 'none',
                   cursor: 'pointer', transition: 'background 0.15s',
                 }}>
                   {/* Icon */}
                   <div style={{
                     width: 44, height: 44, borderRadius: 10, flexShrink: 0,
-                    background: lesson.aiSimplifiedContent ? '#f0fdf4' : '#eff6ff',
+                    background: lesson.aiSimplifiedContent ? (isDark ? '#052e16' : '#f0fdf4') : (isDark ? '#172554' : '#eff6ff'),
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 22,
                   }}>
@@ -265,21 +268,21 @@ export default function DocumentsPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                       <span style={{
                         fontSize: 11, fontWeight: 700, color: '#16a34a',
-                        background: '#f0fdf4', padding: '1px 6px', borderRadius: 4,
+                        background: isDark ? '#052e16' : '#f0fdf4', padding: '1px 6px', borderRadius: 4,
                       }}>
                         {lesson.course?.code}
                       </span>
-                      <span style={{ fontSize: 11, color: '#9ca3af' }}>
+                      <span style={{ fontSize: 11, color: textSecondary }}>
                         Week {lesson.weekNumber}
                       </span>
                     </div>
                     <div style={{
-                      fontSize: 14, fontWeight: 600, color: '#1f2937',
+                      fontSize: 14, fontWeight: 600, color: text,
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>
                       {lesson.title}
                     </div>
-                    <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
+                    <div style={{ fontSize: 12, color: textSecondary, marginTop: 2 }}>
                       By {lesson.uploadedBy?.name} •
                       {lesson.aiSimplifiedContent ? ' Has notes' : ' No notes yet'} •
                       {lesson.videoLinks?.length > 0 ? ` ${lesson.videoLinks.length} video(s)` : ' No videos'}
@@ -290,7 +293,7 @@ export default function DocumentsPage() {
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     {lesson.aiSimplifiedContent && (
                       <span style={{
-                        background: '#f0fdf4', color: '#16a34a',
+                        background: isDark ? '#052e16' : '#f0fdf4', color: '#16a34a',
                         padding: '3px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600,
                       }}>
                         📄 Notes
@@ -298,7 +301,7 @@ export default function DocumentsPage() {
                     )}
                     {lesson.videoLinks?.length > 0 && (
                       <span style={{
-                        background: '#fef2f2', color: '#dc2626',
+                        background: isDark ? '#450a0a' : '#fef2f2', color: '#dc2626',
                         padding: '3px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600,
                       }}>
                         🎥 Video
@@ -306,7 +309,7 @@ export default function DocumentsPage() {
                     )}
                   </div>
 
-                  <span style={{ color: '#9ca3af', fontSize: 18, flexShrink: 0 }}>›</span>
+                  <span style={{ color: textSecondary, fontSize: 18, flexShrink: 0 }}>›</span>
                 </div>
               </Link>
             ))}

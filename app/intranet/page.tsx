@@ -2,17 +2,18 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { useTheme } from '../../context/ThemeContext' // adjust path to match your project structure
 
 const resources = [
-  { icon: '🛒', title: 'Marketplace', desc: 'Buy, sell and connect with students', href: '#', color: '#16a34a', bg: '#f0fdf4' },
-  { icon: '📅', title: 'School Events', desc: 'Discover and join campus events', href: '#', color: '#2563eb', bg: '#eff6ff' },
-  { icon: '🔍', title: 'Lost & Found', desc: 'Report or find lost items', href: '#', color: '#d97706', bg: '#fffbeb' },
-  { icon: '🗺️', title: 'School Map', desc: 'Navigate campus easily', href: '#', color: '#7c3aed', bg: '#f5f3ff' },
-  { icon: '🎓', title: 'Scholarships', desc: 'Find scholarship opportunities', href: '#', color: '#dc2626', bg: '#fef2f2' },
-  { icon: '💼', title: 'Career Opportunities', desc: 'Jobs, internships and more', href: '#', color: '#0891b2', bg: '#ecfeff' },
-  { icon: '📚', title: 'Library', desc: 'Access digital library resources', href: '#', color: '#16a34a', bg: '#f0fdf4' },
-  { icon: '🏥', title: 'Health Services', desc: 'Campus health and wellness', href: '#', color: '#dc2626', bg: '#fef2f2' },
-  { icon: '🚌', title: 'Transport', desc: 'Bus schedules and routes', href: '#', color: '#d97706', bg: '#fffbeb' },
+  { icon: '🛒', title: 'Marketplace', desc: 'Buy, sell and connect with students', href: '#', color: '#16a34a', bg: '#f0fdf4', bgDark: '#052e16' },
+  { icon: '📅', title: 'School Events', desc: 'Discover and join campus events', href: '#', color: '#2563eb', bg: '#eff6ff', bgDark: '#172554' },
+  { icon: '🔍', title: 'Lost & Found', desc: 'Report or find lost items', href: '#', color: '#d97706', bg: '#fffbeb', bgDark: '#451a03' },
+  { icon: '🗺️', title: 'School Map', desc: 'Navigate campus easily', href: '#', color: '#7c3aed', bg: '#f5f3ff', bgDark: '#2e1065' },
+  { icon: '🎓', title: 'Scholarships', desc: 'Find scholarship opportunities', href: '#', color: '#dc2626', bg: '#fef2f2', bgDark: '#450a0a' },
+  { icon: '💼', title: 'Career Opportunities', desc: 'Jobs, internships and more', href: '#', color: '#0891b2', bg: '#ecfeff', bgDark: '#083344' },
+  { icon: '📚', title: 'Library', desc: 'Access digital library resources', href: '#', color: '#16a34a', bg: '#f0fdf4', bgDark: '#052e16' },
+  { icon: '🏥', title: 'Health Services', desc: 'Campus health and wellness', href: '#', color: '#dc2626', bg: '#fef2f2', bgDark: '#450a0a' },
+  { icon: '🚌', title: 'Transport', desc: 'Bus schedules and routes', href: '#', color: '#d97706', bg: '#fffbeb', bgDark: '#451a03' },
 ]
 
 const announcements = [
@@ -22,11 +23,12 @@ const announcements = [
 ]
 
 export default function IntranetPage() {
+  const { bg, bgCard, bgSecondary, text, textSecondary, border, inputBg, isDark } = useTheme()
   const [showMarketModal, setShowMarketModal] = useState(false)
   const [activeSection, setActiveSection] = useState<'home' | 'marketplace'>('home')
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: 'calc(100vh - 60px)' }}>
+    <div style={{ background: bg, minHeight: 'calc(100vh - 60px)' }}>
 
       {/* ===== MARKETPLACE CHOICE MODAL ===== */}
       {showMarketModal && (
@@ -43,13 +45,13 @@ export default function IntranetPage() {
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              background: 'white', borderRadius: 20,
+              background: bgCard, borderRadius: 20,
               width: '100%', maxWidth: 520,
               overflow: 'hidden',
               boxShadow: '0 24px 64px rgba(0,0,0,0.2)',
             }}
           >
-            {/* Modal header */}
+            {/* Modal header — fixed brand gradient */}
             <div style={{
               background: 'linear-gradient(135deg, #052e16, #16a34a)',
               padding: '24px 28px',
@@ -95,8 +97,8 @@ export default function IntranetPage() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 16,
                     padding: '18px 20px', borderRadius: 14,
-                    border: '2px solid #bbf7d0',
-                    background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                    border: isDark ? '2px solid #166534' : '2px solid #bbf7d0',
+                    background: isDark ? 'linear-gradient(135deg, #052e16, #14532d)' : 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
                     cursor: 'pointer', transition: 'all 0.15s',
                   }}
                   onMouseEnter={e => {
@@ -118,7 +120,7 @@ export default function IntranetPage() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                      <span style={{ fontSize: 15, fontWeight: 800, color: '#15803d' }}>
+                      <span style={{ fontSize: 15, fontWeight: 800, color: isDark ? '#86efac' : '#15803d' }}>
                         Order Groceries
                       </span>
                       <span style={{
@@ -129,7 +131,7 @@ export default function IntranetPage() {
                         NEW
                       </span>
                     </div>
-                    <p style={{ fontSize: 13, color: '#6b7280', margin: 0, lineHeight: 1.5 }}>
+                    <p style={{ fontSize: 13, color: textSecondary, margin: 0, lineHeight: 1.5 }}>
                       Get fresh market items delivered to your door. Make a list, send it off — no stress.
                     </p>
                     <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600, marginTop: 5 }}>
@@ -142,9 +144,9 @@ export default function IntranetPage() {
 
               {/* Divider */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ flex: 1, height: 1, background: '#f3f4f6' }} />
-                <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 600 }}>OR</span>
-                <div style={{ flex: 1, height: 1, background: '#f3f4f6' }} />
+                <div style={{ flex: 1, height: 1, background: border }} />
+                <span style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>OR</span>
+                <div style={{ flex: 1, height: 1, background: border }} />
               </div>
 
               {/* Option 2 — Student Marketplace */}
@@ -152,18 +154,18 @@ export default function IntranetPage() {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 16,
                   padding: '18px 20px', borderRadius: 14,
-                  border: '2px solid #e5e7eb',
-                  background: '#f9fafb',
+                  border: `2px solid ${border}`,
+                  background: bgSecondary,
                   cursor: 'pointer', transition: 'all 0.15s',
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.border = '2px solid #bfdbfe'
-                  e.currentTarget.style.background = '#eff6ff'
+                  e.currentTarget.style.background = isDark ? '#172554' : '#eff6ff'
                   e.currentTarget.style.transform = 'translateY(-2px)'
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.border = '2px solid #e5e7eb'
-                  e.currentTarget.style.background = '#f9fafb'
+                  e.currentTarget.style.border = `2px solid ${border}`
+                  e.currentTarget.style.background = bgSecondary
                   e.currentTarget.style.transform = 'translateY(0)'
                 }}
                 onClick={() => {
@@ -181,18 +183,19 @@ export default function IntranetPage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                    <span style={{ fontSize: 15, fontWeight: 800, color: '#1e40af' }}>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: isDark ? '#93c5fd' : '#1e40af' }}>
                       Student Marketplace
                     </span>
                     <span style={{
-                      background: '#dbeafe', color: '#2563eb',
+                      background: isDark ? '#1e3a8a' : '#dbeafe',
+                      color: isDark ? '#93c5fd' : '#2563eb',
                       fontSize: 10, fontWeight: 700, padding: '2px 6px',
                       borderRadius: 4,
                     }}>
                       BETA
                     </span>
                   </div>
-                  <p style={{ fontSize: 13, color: '#6b7280', margin: 0, lineHeight: 1.5 }}>
+                  <p style={{ fontSize: 13, color: textSecondary, margin: 0, lineHeight: 1.5 }}>
                     Buy and sell textbooks, electronics, clothes and more with fellow students on campus.
                   </p>
                   <div style={{ fontSize: 11, color: '#2563eb', fontWeight: 600, marginTop: 5 }}>
@@ -204,12 +207,13 @@ export default function IntranetPage() {
 
               {/* Info note */}
               <div style={{
-                background: '#fffbeb', border: '1px solid #fde68a',
+                background: isDark ? '#451a03' : '#fffbeb',
+                border: isDark ? '1px solid #78350f' : '1px solid #fde68a',
                 borderRadius: 10, padding: '10px 14px',
                 display: 'flex', gap: 8, alignItems: 'flex-start',
               }}>
                 <span style={{ fontSize: 16, flexShrink: 0 }}>💡</span>
-                <p style={{ fontSize: 12, color: '#78350f', margin: 0, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 12, color: isDark ? '#fde68a' : '#78350f', margin: 0, lineHeight: 1.5 }}>
                   <strong>Go To Market</strong> handles fresh groceries from local markets.
                   The <strong>Student Marketplace</strong> is for buying and selling items between students on campus.
                 </p>
@@ -219,7 +223,7 @@ export default function IntranetPage() {
         </div>
       )}
 
-      {/* Hero */}
+      {/* Hero — fixed brand gradient, not theme-swapped */}
       <div style={{
         background: 'linear-gradient(135deg, #0c4a6e 0%, #075985 50%, #0369a1 100%)',
         padding: '40px 24px 80px',
@@ -244,7 +248,7 @@ export default function IntranetPage() {
           {/* Search */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
-            background: 'white', borderRadius: 12, padding: '12px 18px',
+            background: bgCard, borderRadius: 12, padding: '12px 18px',
             maxWidth: 480, marginTop: 24,
           }}>
             <span style={{ fontSize: 16 }}>🔍</span>
@@ -252,7 +256,7 @@ export default function IntranetPage() {
               placeholder="Search campus resources..."
               style={{
                 flex: 1, border: 'none', outline: 'none',
-                fontSize: 14, color: '#374151', background: 'transparent',
+                fontSize: 14, color: text, background: 'transparent',
               }}
             />
           </div>
@@ -266,9 +270,9 @@ export default function IntranetPage() {
           <button
             onClick={() => setActiveSection('home')}
             style={{
-              background: 'white', border: '1px solid #e5e7eb',
+              background: bgCard, border: `1px solid ${border}`,
               borderRadius: 8, padding: '8px 14px', cursor: 'pointer',
-              fontSize: 13, fontWeight: 600, color: '#374151',
+              fontSize: 13, fontWeight: 600, color: text,
               marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
             }}
           >
@@ -279,7 +283,7 @@ export default function IntranetPage() {
         {/* ===== HOME SECTION ===== */}
         {activeSection === 'home' && (
           <>
-            {/* Resources grid */}
+            {/* Resources grid — tile accent colors kept fixed, just swap bg tint by theme */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
@@ -299,7 +303,7 @@ export default function IntranetPage() {
                   style={{ textDecoration: 'none' }}
                 >
                   <div style={{
-                    background: r.bg,
+                    background: isDark ? r.bgDark : r.bg,
                     borderRadius: 12,
                     padding: '20px 16px',
                     textAlign: 'center',
@@ -308,10 +312,10 @@ export default function IntranetPage() {
                     border: `1px solid ${r.color}20`,
                   }}>
                     <div style={{ fontSize: 32, marginBottom: 10 }}>{r.icon}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1f2937', marginBottom: 4 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 4 }}>
                       {r.title}
                     </div>
-                    <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.4 }}>
+                    <div style={{ fontSize: 11, color: textSecondary, lineHeight: 1.4 }}>
                       {r.desc}
                     </div>
                   </div>
@@ -324,30 +328,30 @@ export default function IntranetPage() {
 
               {/* Campus announcements */}
               <div style={{
-                background: 'white', borderRadius: 16,
+                background: bgCard, borderRadius: 16,
                 boxShadow: '0 4px 16px rgba(0,0,0,0.06)', padding: 24,
               }}>
-                <h2 style={{ fontSize: 15, marginBottom: 16 }}>📢 Campus Notices</h2>
+                <h2 style={{ fontSize: 15, marginBottom: 16, color: text }}>📢 Campus Notices</h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {announcements.map((ann, i) => (
                     <div key={i} style={{
                       display: 'flex', gap: 12, alignItems: 'flex-start',
-                      padding: '12px', background: '#f9fafb', borderRadius: 10,
-                      border: '1px solid #f3f4f6',
+                      padding: '12px', background: bgSecondary, borderRadius: 10,
+                      border: `1px solid ${border}`,
                     }}>
                       <div style={{
                         width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-                        background: ann.type === 'urgent' ? '#fef2f2' : '#eff6ff',
+                        background: ann.type === 'urgent' ? (isDark ? '#450a0a' : '#fef2f2') : (isDark ? '#172554' : '#eff6ff'),
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 16,
                       }}>
                         {ann.type === 'urgent' ? '🚨' : 'ℹ️'}
                       </div>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1f2937', marginBottom: 2 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: text, marginBottom: 2 }}>
                           {ann.title}
                         </div>
-                        <div style={{ fontSize: 11, color: '#9ca3af' }}>{ann.time}</div>
+                        <div style={{ fontSize: 11, color: textSecondary }}>{ann.time}</div>
                       </div>
                     </div>
                   ))}
@@ -356,10 +360,10 @@ export default function IntranetPage() {
 
               {/* Quick links */}
               <div style={{
-                background: 'white', borderRadius: 16,
+                background: bgCard, borderRadius: 16,
                 boxShadow: '0 4px 16px rgba(0,0,0,0.06)', padding: 24,
               }}>
-                <h2 style={{ fontSize: 15, marginBottom: 16 }}>⚡ Quick Links</h2>
+                <h2 style={{ fontSize: 15, marginBottom: 16, color: text }}>⚡ Quick Links</h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[
                     { label: 'Student Portal', icon: '👤', desc: 'Access your student records' },
@@ -370,16 +374,16 @@ export default function IntranetPage() {
                   ].map(link => (
                     <div key={link.label} style={{
                       display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '10px 14px', borderRadius: 10, background: '#f9fafb',
-                      border: '1px solid #f3f4f6', cursor: 'pointer',
+                      padding: '10px 14px', borderRadius: 10, background: bgSecondary,
+                      border: `1px solid ${border}`, cursor: 'pointer',
                       transition: 'all 0.15s',
                     }}>
                       <span style={{ fontSize: 20 }}>{link.icon}</span>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1f2937' }}>{link.label}</div>
-                        <div style={{ fontSize: 11, color: '#9ca3af' }}>{link.desc}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: text }}>{link.label}</div>
+                        <div style={{ fontSize: 11, color: textSecondary }}>{link.desc}</div>
                       </div>
-                      <span style={{ marginLeft: 'auto', color: '#9ca3af' }}>›</span>
+                      <span style={{ marginLeft: 'auto', color: textSecondary }}>›</span>
                     </div>
                   ))}
                 </div>
@@ -394,10 +398,10 @@ export default function IntranetPage() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 800, color: '#1f2937', margin: 0 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 800, color: text, margin: 0 }}>
                   🤝 Student Marketplace
                 </h2>
-                <p style={{ fontSize: 13, color: '#6b7280', margin: '4px 0 0' }}>
+                <p style={{ fontSize: 13, color: textSecondary, margin: '4px 0 0' }}>
                   Buy and sell with fellow students on campus
                 </p>
               </div>
@@ -428,10 +432,10 @@ export default function IntranetPage() {
               ].map(cat => (
                 <button key={cat.label} style={{
                   padding: '6px 14px', borderRadius: 999,
-                  border: '1px solid #e5e7eb', background: 'white',
+                  border: `1px solid ${border}`, background: bgCard,
                   cursor: 'pointer', fontSize: 13, fontWeight: 500,
                   display: 'flex', alignItems: 'center', gap: 6,
-                  color: '#374151',
+                  color: text,
                 }}>
                   {cat.icon} {cat.label}
                 </button>
@@ -440,16 +444,16 @@ export default function IntranetPage() {
 
             {/* Coming soon state */}
             <div style={{
-              background: 'white', borderRadius: 16,
+              background: bgCard, borderRadius: 16,
               padding: '60px 24px', textAlign: 'center',
               boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-              border: '1px solid #f3f4f6',
+              border: `1px solid ${border}`,
             }}>
               <div style={{ fontSize: 64, marginBottom: 16 }}>🤝</div>
-              <h3 style={{ fontSize: 20, fontWeight: 800, color: '#1f2937', marginBottom: 8 }}>
+              <h3 style={{ fontSize: 20, fontWeight: 800, color: text, marginBottom: 8 }}>
                 Student Marketplace Coming Soon
               </h3>
-              <p style={{ fontSize: 14, color: '#6b7280', maxWidth: 400, margin: '0 auto 24px', lineHeight: 1.7 }}>
+              <p style={{ fontSize: 14, color: textSecondary, maxWidth: 400, margin: '0 auto 24px', lineHeight: 1.7 }}>
                 Buy and sell textbooks, electronics, clothes and more with fellow students. Post your items and connect with buyers on campus.
               </p>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
