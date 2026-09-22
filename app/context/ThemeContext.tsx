@@ -62,16 +62,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const theme = isDark ? dark : light
 
-  return (
+    return (
     <ThemeContext.Provider value={{ isDark, toggleDark, ...theme }}>
-      <div style={{
-        background: theme.bg,
-        color: theme.text,
-        minHeight: '100vh',
-        transition: 'background 0.2s, color 0.2s',
-      }}>
-        {children}
-      </div>
+      {children}
     </ThemeContext.Provider>
   )
 }
