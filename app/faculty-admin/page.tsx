@@ -41,6 +41,15 @@ export default function FacultyAdminPage() {
   const [deptMessage, setDeptMessage] = useState('')
   const [deptSubmitting, setDeptSubmitting] = useState(false)
 
+  // Showcase
+  const [showcasePosts, setShowcasePosts] = useState<any[]>([])
+  const [showcaseTitle, setShowcaseTitle] = useState('')
+  const [showcaseDesc, setShowcaseDesc] = useState('')
+  const [showcaseUrl, setShowcaseUrl] = useState('')
+  const [showcaseTag, setShowcaseTag] = useState('')
+  const [showcaseSubmitting, setShowcaseSubmitting] = useState(false)
+  const [showcaseMessage, setShowcaseMessage] = useState('')
+
   const token = getAuthToken()
 
   const [faStudentDept, setFaStudentDept] = useState('')
@@ -92,6 +101,15 @@ export default function FacultyAdminPage() {
 
       setUsers(facultyUsers)
       setDepartments(facultyDepts)
+
+      // Showcase posts for this faculty
+      const showcaseRes = await fetch(
+        `${API_BASE}/api/showcase/faculty/${encodeURIComponent(admin.faculty)}`
+      )
+      if (showcaseRes.ok) {
+        const showcaseData = await showcaseRes.json()
+        setShowcasePosts(Array.isArray(showcaseData) ? showcaseData : [])
+      }
     } catch (err) {
       console.error(err)
     } finally {
@@ -170,6 +188,50 @@ export default function FacultyAdminPage() {
       if (res.ok && currentUser) await loadAll(currentUser)
       else { const d = await res.json(); alert(d.message) }
     } catch (err) { console.error(err) }
+  }
+
+  // ===== SHOWCASE =====
+  const handleCreateShowcase = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setShowcaseSubmitting(true)
+    setShowcaseMessage('')
+    try {
+      const res = await fetch(`${API_BASE}/api/showcase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          title: showcaseTitle,
+          description: showcaseDesc,
+          videoUrl: showcaseUrl,
+          faculty: currentUser?.faculty,
+          tag: showcaseTag,
+        }),
+      })
+      if (res.ok) {
+        setShowcaseMessage('Posted successfully!')
+        setShowcaseTitle('')
+        setShowcaseDesc('')
+        setShowcaseUrl('')
+        setShowcaseTag('')
+        if (currentUser) await loadAll(currentUser)
+      } else {
+        const data = await res.json()
+        setShowcaseMessage(data.message || 'Failed')
+      }
+    } catch (err) {
+      setShowcaseMessage('Something went wrong')
+    } finally {
+      setShowcaseSubmitting(false)
+    }
+  }
+
+  const handleDeleteShowcase = async (id: string) => {
+    if (!confirm('Delete this post?')) return
+    await fetch(`${API_BASE}/api/showcase/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (currentUser) await loadAll(currentUser)
   }
 
   if (!authChecked || loading) return (
@@ -281,6 +343,7 @@ export default function FacultyAdminPage() {
               { key: 'departments', label: '🏛️ Departments' },
               { key: 'hosts', label: '🎙️ Host Permissions' },
               { key: 'learning', label: '🎓 Learning Hub' },
+              { key: 'showcase', label: '🎬 Showcase' },
             ].map(tab => (
               <button key={tab.key} style={tabStyle(tab.key)} onClick={() => setActiveTab(tab.key)}>
                 {tab.label}
@@ -806,6 +869,96 @@ export default function FacultyAdminPage() {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* ===== SHOWCASE TAB ===== */}
+            {activeTab === 'showcase' && (
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
+
+                  {/* Post form */}
+                  <div>
+                    <h2 style={{ fontSize: 16, marginBottom: 6 }}>Post to Faculty Showcase</h2>
+                    <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
+                      Post videos or links visible to the public under {currentUser?.faculty}
+                    </p>
+                    <form onSubmit={handleCreateShowcase}>
+                      <label>Title *</label>
+                      <input type="text" placeholder="e.g. Faculty Research Day 2026" value={showcaseTitle} onChange={e => setShowcaseTitle(e.target.value)} required />
+                      <label>Description</label>
+                      <textarea placeholder="What is this about?" value={showcaseDesc} onChange={e => setShowcaseDesc(e.target.value)} rows={3}
+                        style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e5e7eb', borderRadius: 8, fontSize: 14, resize: 'vertical', fontFamily: 'inherit', outline: 'none' }} />
+                      <label>YouTube / Vimeo URL *</label>
+                      <input type="url" placeholder="https://youtube.com/watch?v=..." value={showcaseUrl} onChange={e => setShowcaseUrl(e.target.value)} required />
+                      <label>Tag (optional)</label>
+                      <input type="text" placeholder="e.g. Research, Event, Performance" value={showcaseTag} onChange={e => setShowcaseTag(e.target.value)} />
+                      <button type="submit" className="btn-primary" disabled={showcaseSubmitting} style={{ marginTop: 16, width: '100%' }}>
+                        {showcaseSubmitting ? 'Posting...' : '🎬 Post to Faculty Showcase'}
+                      </button>
+                      {showcaseMessage && (
+                        <div className={showcaseMessage.includes('success') ? 'alert alert-success' : 'alert alert-error'} style={{ marginTop: 10 }}>
+                          {showcaseMessage}
+                        </div>
+                      )}
+                    </form>
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ background: '#f9fafb', borderRadius: 12, padding: 20, border: '1px solid #e5e7eb' }}>
+                    <h3 style={{ fontSize: 14, marginBottom: 12 }}>📋 About Faculty Showcase</h3>
+                    <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.6, marginBottom: 12 }}>
+                      Posts here appear publicly on the UniWeb homepage under <strong>{currentUser?.faculty}</strong>.
+                      The world can see what your faculty is doing — research, events, performances and more.
+                    </p>
+                    <div style={{ background: '#f0fdf4', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: '#15803d' }}>
+                      💡 Department Admins can also post directly to their department showcase.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Posted videos */}
+                <h2 style={{ fontSize: 16, marginBottom: 14 }}>
+                  Faculty Posts ({showcasePosts.length})
+                </h2>
+                {showcasePosts.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '32px', color: '#9ca3af', background: '#f9fafb', borderRadius: 12 }}>
+                    <div style={{ fontSize: 40, marginBottom: 8 }}>🎬</div>
+                    <p>No posts yet. Be the first to post something about your faculty.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+                    {showcasePosts.map(post => (
+                      <div key={post._id} style={{ background: '#f9fafb', borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+                        <div style={{ position: 'relative', aspectRatio: '16/9', background: '#1a1a2e' }}>
+                          {post.thumbnail
+                            ? <img src={post.thumbnail} alt={post.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #052e16, #16a34a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🎬</div>
+                          }
+                          {post.department && (
+                            <div style={{ position: 'absolute', top: 6, left: 6, background: '#2563eb', color: 'white', borderRadius: 4, padding: '2px 6px', fontSize: 10, fontWeight: 700 }}>
+                              {post.department}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ padding: '10px 12px' }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#1f2937', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {post.title}
+                          </div>
+                          <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
+                            👁 {post.views} • {new Date(post.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                          </div>
+                          <button onClick={() => handleDeleteShowcase(post._id)} style={{
+                            width: '100%', padding: '5px', borderRadius: 6, border: 'none',
+                            background: '#fef2f2', color: '#ef4444', cursor: 'pointer', fontSize: 11, fontWeight: 600,
+                          }}>
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

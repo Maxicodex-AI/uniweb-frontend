@@ -121,6 +121,393 @@ interface ShowcasePost {
   createdAt: string
 }
 
+// Faculty → Department → Posts explorer. Visitors drill down from a grid of
+// faculties to a grid of departments, then to that department's video posts.
+function FacultyShowcaseSection() {
+  const [faculties, setFaculties] = useState<any[]>([])
+  const [selectedFaculty, setSelectedFaculty] = useState<any>(null)
+  const [selectedDept, setSelectedDept] = useState<any>(null)
+  const [deptPosts, setDeptPosts] = useState<any[]>([])
+  const [loadingPosts, setLoadingPosts] = useState(false)
+  const [playingId, setPlayingId] = useState<string | null>(null)
+
+  const LEARNING_TYPE_COLORS: Record<string, string> = {
+    language_linguistics: '#7c3aed',
+    science_medicine: '#0891b2',
+    arts_performance: '#be185d',
+    agriculture_environment: '#16a34a',
+    engineering_technology: '#2563eb',
+    business_economics: '#d97706',
+    journalism_media: '#dc2626',
+    law_studies: '#4338ca',
+    health_sciences: '#1e3a5f',
+    education_studies: '#2563eb',
+    general_studies: '#16a34a',
+  }
+
+  const LEARNING_TYPE_ICONS: Record<string, string> = {
+    language_linguistics: '🗣️',
+    science_medicine: '🔬',
+    arts_performance: '🎭',
+    agriculture_environment: '🌱',
+    engineering_technology: '⚙️',
+    business_economics: '💼',
+    journalism_media: '📰',
+    law_studies: '⚖️',
+    health_sciences: '🏥',
+    education_studies: '🎒',
+    general_studies: '📚',
+  }
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/showcase/faculties`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          // Only show faculties that have at least one department
+          setFaculties(data.filter((f: any) => f.departments?.length > 0))
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const loadDeptPosts = async (faculty: any, dept: any) => {
+    setSelectedDept(dept)
+    setLoadingPosts(true)
+    setDeptPosts([])
+    setPlayingId(null)
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/showcase/department/${encodeURIComponent(faculty.name)}/${encodeURIComponent(dept.name)}`
+      )
+      if (res.ok) {
+        const data = await res.json()
+        setDeptPosts(Array.isArray(data) ? data : [])
+      }
+    } catch (err) {}
+    finally { setLoadingPosts(false) }
+  }
+
+  if (faculties.length === 0) return null
+
+  return (
+    <div style={{ background: '#0f172a', padding: '64px 24px' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+
+        {/* Section header */}
+        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: 999, padding: '4px 16px', marginBottom: 12,
+            fontSize: 13, color: '#94a3b8', fontWeight: 600,
+          }}>
+            🏛️ Explore by Faculty
+          </div>
+          <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 800, color: 'white', marginBottom: 8 }}>
+            What's Happening Across Campus
+          </h2>
+          <p style={{ fontSize: 16, color: '#94a3b8', maxWidth: 500, margin: '0 auto' }}>
+            Explore real activities from every faculty and department
+          </p>
+        </div>
+
+        {/* ===== FACULTY GRID ===== */}
+        {!selectedFaculty && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
+            {faculties.map(faculty => (
+              <div
+                key={faculty._id}
+                onClick={() => setSelectedFaculty(faculty)}
+                style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 16, padding: '20px',
+                  cursor: 'pointer', transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
+                  e.currentTarget.style.transform = 'translateY(-4px)'
+                  e.currentTarget.style.border = '1px solid rgba(255,255,255,0.3)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.border = '1px solid rgba(255,255,255,0.1)'
+                }}
+              >
+                <div style={{ fontSize: 36, marginBottom: 12 }}>🏛️</div>
+                <h3 style={{ fontSize: 15, fontWeight: 800, color: 'white', marginBottom: 6, lineHeight: 1.3 }}>
+                  {faculty.name}
+                </h3>
+                {faculty.description && (
+                  <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 10, lineHeight: 1.5 }}>
+                    {faculty.description.slice(0, 60)}{faculty.description.length > 60 ? '...' : ''}
+                  </p>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, color: '#64748b' }}>
+                    {faculty.departments?.length} department{faculty.departments?.length !== 1 ? 's' : ''}
+                  </span>
+                  {faculty.postCount > 0 && (
+                    <span style={{
+                      background: '#16a34a', color: 'white',
+                      padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700,
+                    }}>
+                      {faculty.postCount} posts
+                    </span>
+                  )}
+                </div>
+                <div style={{ marginTop: 14, fontSize: 12, color: '#4ade80', fontWeight: 600 }}>
+                  Explore departments →
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ===== DEPARTMENT GRID ===== */}
+        {selectedFaculty && !selectedDept && (
+          <div>
+            {/* Breadcrumb */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
+              <button
+                onClick={() => setSelectedFaculty(null)}
+                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: 'white', fontSize: 13 }}
+              >
+                ← All Faculties
+              </button>
+              <span style={{ color: '#64748b' }}>›</span>
+              <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>{selectedFaculty.name}</span>
+            </div>
+
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: 'white', marginBottom: 20 }}>
+              Departments in {selectedFaculty.name}
+            </h3>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
+              {selectedFaculty.departments?.map((dept: any) => {
+                const color = LEARNING_TYPE_COLORS[dept.learningType] || '#16a34a'
+                const icon = LEARNING_TYPE_ICONS[dept.learningType] || '📚'
+                return (
+                  <div
+                    key={dept._id}
+                    onClick={() => loadDeptPosts(selectedFaculty, dept)}
+                    style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${color}40`,
+                      borderRadius: 14, overflow: 'hidden',
+                      cursor: 'pointer', transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.transform = 'translateY(-4px)'
+                      e.currentTarget.style.border = `1px solid ${color}`
+                      e.currentTarget.style.background = `${color}15`
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.transform = 'translateY(0)'
+                      e.currentTarget.style.border = `1px solid ${color}40`
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+                    }}
+                  >
+                    {/* Latest thumbnail or gradient */}
+                    <div style={{ height: 80, background: dept.latestThumbnail ? 'transparent' : `linear-gradient(135deg, ${color}40, ${color}20)`, position: 'relative', overflow: 'hidden' }}>
+                      {dept.latestThumbnail ? (
+                        <img src={dept.latestThumbnail} alt={dept.name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 32 }}>
+                          {icon}
+                        </div>
+                      )}
+                      {dept.postCount > 0 && (
+                        <div style={{
+                          position: 'absolute', top: 8, right: 8,
+                          background: color, color: 'white',
+                          borderRadius: 999, padding: '2px 8px', fontSize: 11, fontWeight: 700,
+                        }}>
+                          {dept.postCount} posts
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ padding: '12px 14px' }}>
+                      <div style={{ fontSize: 11, color, fontWeight: 700, marginBottom: 3 }}>
+                        {icon} {dept.learningType?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                      </div>
+                      <h4 style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0 }}>{dept.name}</h4>
+                      {dept.description && (
+                        <p style={{ fontSize: 11, color: '#64748b', marginTop: 4, lineHeight: 1.4 }}>
+                          {dept.description.slice(0, 50)}{dept.description.length > 50 ? '...' : ''}
+                        </p>
+                      )}
+                      <div style={{ marginTop: 10, fontSize: 11, color, fontWeight: 600 }}>
+                        {dept.postCount > 0 ? `View ${dept.postCount} post${dept.postCount !== 1 ? 's' : ''} →` : 'No posts yet'}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ===== DEPARTMENT POSTS WALL ===== */}
+        {selectedFaculty && selectedDept && (
+          <div>
+            {/* Breadcrumb */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28, flexWrap: 'wrap' }}>
+              <button
+                onClick={() => { setSelectedFaculty(null); setSelectedDept(null) }}
+                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: 'white', fontSize: 13 }}
+              >
+                All Faculties
+              </button>
+              <span style={{ color: '#64748b' }}>›</span>
+              <button
+                onClick={() => setSelectedDept(null)}
+                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: '#94a3b8', fontSize: 13 }}
+              >
+                {selectedFaculty.name}
+              </button>
+              <span style={{ color: '#64748b' }}>›</span>
+              <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>{selectedDept.name}</span>
+            </div>
+
+            {/* Dept header */}
+            <div style={{
+              background: `linear-gradient(135deg, ${LEARNING_TYPE_COLORS[selectedDept.learningType] || '#16a34a'}30, transparent)`,
+              border: `1px solid ${LEARNING_TYPE_COLORS[selectedDept.learningType] || '#16a34a'}40`,
+              borderRadius: 16, padding: '20px 24px', marginBottom: 28,
+              display: 'flex', alignItems: 'center', gap: 16,
+            }}>
+              <div style={{ fontSize: 40 }}>{LEARNING_TYPE_ICONS[selectedDept.learningType] || '📚'}</div>
+              <div>
+                <h3 style={{ fontSize: 20, fontWeight: 800, color: 'white', margin: 0 }}>{selectedDept.name}</h3>
+                <p style={{ fontSize: 13, color: '#94a3b8', margin: '4px 0 0' }}>
+                  {selectedFaculty.name}
+                  {selectedDept.description ? ` • ${selectedDept.description}` : ''}
+                </p>
+              </div>
+              <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                <div style={{ fontSize: 24, fontWeight: 800, color: 'white' }}>{deptPosts.length}</div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>posts</div>
+              </div>
+            </div>
+
+            {/* Posts */}
+            {loadingPosts ? (
+              <div style={{ textAlign: 'center', padding: '48px', color: '#64748b' }}>
+                <div style={{ fontSize: 36, marginBottom: 12 }}>⏳</div>
+                <p>Loading posts...</p>
+              </div>
+            ) : deptPosts.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 24px' }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🎬</div>
+                <h3 style={{ color: 'white', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
+                  No posts yet
+                </h3>
+                <p style={{ color: '#64748b', fontSize: 14 }}>
+                  The {selectedDept.name} department hasn't posted anything yet.
+                  Check back soon!
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+                {deptPosts.map(post => (
+                  <div
+                    key={post._id}
+                    style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 14, overflow: 'hidden',
+                      transition: 'transform 0.2s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
+                    onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                  >
+                    {/* Video/Thumbnail */}
+                    <div
+                      style={{ position: 'relative', aspectRatio: '16/9', background: '#1a1a2e', cursor: 'pointer' }}
+                      onClick={() => setPlayingId(playingId === post._id ? null : post._id)}
+                    >
+                      {playingId === post._id && post.embedUrl ? (
+                        <iframe
+                          src={post.embedUrl}
+                          style={{ width: '100%', height: '100%', border: 'none' }}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                          {post.thumbnail ? (
+                            <img src={post.thumbnail} alt={post.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${LEARNING_TYPE_COLORS[selectedDept.learningType] || '#052e16'}60, #1a1a2e)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>
+                              🎬
+                            </div>
+                          )}
+                          {/* Play button */}
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                              ▶
+                            </div>
+                          </div>
+                          {/* Views */}
+                          <div style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.7)', color: 'white', borderRadius: 4, padding: '2px 6px', fontSize: 10 }}>
+                            👁 {post.views || 0}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ padding: '14px 16px' }}>
+                      {post.tag && (
+                        <span style={{
+                          background: `${LEARNING_TYPE_COLORS[selectedDept.learningType] || '#16a34a'}30`,
+                          color: LEARNING_TYPE_COLORS[selectedDept.learningType] || '#4ade80',
+                          padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700, marginBottom: 6, display: 'inline-block',
+                        }}>
+                          #{post.tag}
+                        </span>
+                      )}
+                      <h3 style={{ fontSize: 14, fontWeight: 700, color: 'white', marginBottom: 4, lineHeight: 1.4 }}>
+                        {post.title}
+                      </h3>
+                      {post.description && (
+                        <p style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.5, marginBottom: 10 }}>
+                          {post.description.length > 70 ? post.description.slice(0, 70) + '...' : post.description}
+                        </p>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: 10, color: '#64748b' }}>
+                          {post.postedByName} • {new Date(post.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </div>
+                        <a
+                          href={post.videoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            background: LEARNING_TYPE_COLORS[selectedDept.learningType] || '#16a34a',
+                            color: 'white', padding: '5px 12px', borderRadius: 6,
+                            fontSize: 11, fontWeight: 700, textDecoration: 'none',
+                          }}
+                        >
+                          Watch ↗
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // Animated enrollment/faculty counters. Starts from a static fallback
 // (`targets`) and swaps in real numbers from the backend if that fetch
 // resolves before the counter animation starts.
@@ -1367,6 +1754,9 @@ export default function Home() {
 
       {/* ===== CAMPUS SHOWCASE — shown for both logged in and logged out ===== */}
       <ShowcaseSection token={token} />
+
+      {/* ===== FACULTY & DEPARTMENT SHOWCASE ===== */}
+      <FacultyShowcaseSection />
 
       {/* ===== BOTTOM CTA (logged out only) ===== */}
       {!user && (
