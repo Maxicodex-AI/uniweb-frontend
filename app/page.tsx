@@ -128,6 +128,7 @@ function FacultyShowcaseSection() {
   const [selectedFaculty, setSelectedFaculty] = useState<any>(null)
   const [selectedDept, setSelectedDept] = useState<any>(null)
   const [deptPosts, setDeptPosts] = useState<any[]>([])
+  const [facultyPosts, setFacultyPosts] = useState<any[]>([])
   const [loadingPosts, setLoadingPosts] = useState(false)
   const [playingId, setPlayingId] = useState<string | null>(null)
 
@@ -188,6 +189,23 @@ function FacultyShowcaseSection() {
     finally { setLoadingPosts(false) }
   }
 
+  const handleFacultyClick = async (faculty: any) => {
+    setSelectedFaculty(faculty)
+    setSelectedDept(null)
+    setFacultyPosts([])
+    setPlayingId(null)
+    // Load faculty-level posts (posts with no specific department)
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/showcase/faculty-level/${encodeURIComponent(faculty.name)}`
+      )
+      if (res.ok) {
+        const data = await res.json()
+        setFacultyPosts(Array.isArray(data) ? data : [])
+      }
+    } catch (err) {}
+  }
+
   if (faculties.length === 0) return null
 
   return (
@@ -218,7 +236,7 @@ function FacultyShowcaseSection() {
             {faculties.map(faculty => (
               <div
                 key={faculty._id}
-                onClick={() => setSelectedFaculty(faculty)}
+                onClick={() => handleFacultyClick(faculty)}
                 style={{
                   background: 'rgba(255,255,255,0.05)',
                   border: '1px solid rgba(255,255,255,0.1)',
@@ -280,6 +298,50 @@ function FacultyShowcaseSection() {
               <span style={{ color: '#64748b' }}>›</span>
               <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>{selectedFaculty.name}</span>
             </div>
+
+            {/* Faculty-level posts */}
+            {facultyPosts.length > 0 && (
+              <div style={{ marginBottom: 32 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: 'white', marginBottom: 14 }}>
+                  📌 Faculty Posts
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14, marginBottom: 24 }}>
+                  {facultyPosts.map(post => (
+                    <div key={post._id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, overflow: 'hidden' }}>
+                      <div style={{ position: 'relative', aspectRatio: '16/9', background: '#1a1a2e', cursor: 'pointer' }}
+                        onClick={() => setPlayingId(playingId === post._id ? null : post._id)}>
+                        {playingId === post._id && post.embedUrl ? (
+                          <iframe src={post.embedUrl} style={{ width: '100%', height: '100%', border: 'none' }} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                        ) : (
+                          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                            {post.thumbnail
+                              ? <img src={post.thumbnail} alt={post.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #052e16, #16a34a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>🎬</div>
+                            }
+                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>▶</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ padding: '12px 16px' }}>
+                        <h4 style={{ fontSize: 13, fontWeight: 700, color: 'white', marginBottom: 4 }}>{post.title}</h4>
+                        {post.description && (
+                          <p style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>
+                            {post.description.length > 60 ? post.description.slice(0, 60) + '...' : post.description}
+                          </p>
+                        )}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: 10, color: '#64748b' }}>{post.postedByName}</span>
+                          <a href={post.videoUrl} target="_blank" rel="noopener noreferrer" style={{ background: '#16a34a', color: 'white', padding: '4px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700, textDecoration: 'none' }}>Watch ↗</a>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', marginBottom: 24 }} />
+              </div>
+            )}
 
             <h3 style={{ fontSize: 20, fontWeight: 800, color: 'white', marginBottom: 20 }}>
               Departments in {selectedFaculty.name}

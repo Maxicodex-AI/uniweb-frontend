@@ -47,6 +47,7 @@ export default function FacultyAdminPage() {
   const [showcaseDesc, setShowcaseDesc] = useState('')
   const [showcaseUrl, setShowcaseUrl] = useState('')
   const [showcaseTag, setShowcaseTag] = useState('')
+  const [showcaseDept, setShowcaseDept] = useState('')
   const [showcaseSubmitting, setShowcaseSubmitting] = useState(false)
   const [showcaseMessage, setShowcaseMessage] = useState('')
 
@@ -204,6 +205,7 @@ export default function FacultyAdminPage() {
           description: showcaseDesc,
           videoUrl: showcaseUrl,
           faculty: currentUser?.faculty,
+          department: showcaseDept || null,
           tag: showcaseTag,
         }),
       })
@@ -213,6 +215,7 @@ export default function FacultyAdminPage() {
         setShowcaseDesc('')
         setShowcaseUrl('')
         setShowcaseTag('')
+        setShowcaseDept('')
         if (currentUser) await loadAll(currentUser)
       } else {
         const data = await res.json()
@@ -889,6 +892,21 @@ export default function FacultyAdminPage() {
                       <label>Description</label>
                       <textarea placeholder="What is this about?" value={showcaseDesc} onChange={e => setShowcaseDesc(e.target.value)} rows={3}
                         style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e5e7eb', borderRadius: 8, fontSize: 14, resize: 'vertical', fontFamily: 'inherit', outline: 'none' }} />
+                      <label>Department (optional)</label>
+                      <p style={{ fontSize: 11, color: '#9ca3af', marginBottom: 6, marginTop: -8 }}>
+                        Leave empty to post at faculty level — visible when visitor clicks your faculty
+                      </p>
+                      <select
+                        value={showcaseDept}
+                        onChange={e => setShowcaseDept(e.target.value)}
+                      >
+                        <option value="">-- Post at Faculty Level (no specific dept) --</option>
+                        {departments.map((dept: any) => (
+                          <option key={dept._id} value={dept.name}>
+                            {dept.name}
+                          </option>
+                        ))}
+                      </select>
                       <label>YouTube / Vimeo URL *</label>
                       <input type="url" placeholder="https://youtube.com/watch?v=..." value={showcaseUrl} onChange={e => setShowcaseUrl(e.target.value)} required />
                       <label>Tag (optional)</label>
