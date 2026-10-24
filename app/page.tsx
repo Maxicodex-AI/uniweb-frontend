@@ -22,6 +22,257 @@ interface Announcement {
   createdAt: string
 }
 
+interface ShowcasePost {
+  _id: string
+  title: string
+  description?: string
+  faculty?: string
+  department?: string
+  tag?: string
+  thumbnail?: string
+  embedUrl?: string
+  videoUrl?: string
+  views?: number
+  isPinned?: boolean
+  postedByName?: string
+  createdAt: string
+}
+
+// ===== STYLES (one block; responsive; keyboard focus; reduced motion) =====
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+.uw{--deep:#04160d;--forest:#0a2a1c;--leaf:#16a34a;--mint:#7ee2a8;--gold:#d4a86a;--paper:#f3f6f4;--ink:#0e2317;--mut:#56665d;--line:#dfe6e1;background:var(--paper);color:var(--ink);font-family:'Inter',-apple-system,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;min-height:calc(100vh - 60px)}
+.uw *{box-sizing:border-box}
+.uw a{color:inherit;text-decoration:none}
+.uw button{font-family:inherit;cursor:pointer}
+.uw :focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:6px}
+.uw h1,.uw h2,.uw h3,.uw h4,.uw p{margin:0}
+.serif{font-family:'Fraunces',Georgia,serif}
+.wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+.sec{padding:72px 0}
+.sec-dark{background:var(--deep);color:#fff}
+.sec-white{background:#fff}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:10px;padding:13px 26px;font-size:15px;font-weight:700;transition:transform .15s,box-shadow .2s,background .2s}
+.btn-p{background:linear-gradient(135deg,#4ade80,#16a34a);color:#052e16;box-shadow:0 8px 20px rgba(22,163,74,.28)}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(22,163,74,.38)}
+.btn-g{background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.3)}
+.btn-g:hover{background:rgba(255,255,255,.14);border-color:var(--gold)}
+.btn-l{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn-l:hover{border-color:var(--leaf)}
+
+/* headings */
+.head{max-width:620px;margin:0 0 40px}
+.head.c{margin:0 auto 44px;text-align:center}
+.head h2{font-family:'Fraunces',Georgia,serif;font-size:clamp(28px,4vw,40px);font-weight:600;line-height:1.12;letter-spacing:-.01em}
+.head p{margin-top:12px;color:var(--mut);font-size:17px;max-width:520px}
+.head.c p{margin-left:auto;margin-right:auto}
+.dark .head p,.sec-dark .head p{color:rgba(255,255,255,.62)}
+.rule{width:44px;height:3px;background:var(--gold);border-radius:3px;margin-bottom:16px}
+.head.c .rule{margin-left:auto;margin-right:auto}
+
+/* hero */
+.hero{position:relative;overflow:hidden;background:var(--deep);color:#fff}
+.hero-bg{position:absolute;inset:0;background:url(/uniweb.png) center top/cover}
+.hero-wash{position:absolute;inset:0;background:linear-gradient(100deg,rgba(4,22,13,.96) 8%,rgba(4,22,13,.78) 55%,rgba(4,22,13,.9)),linear-gradient(180deg,transparent 60%,#04160d)}
+.hero-in{position:relative;z-index:2;display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;padding:84px 24px 72px}
+.hero h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(40px,6vw,68px);line-height:1.04;letter-spacing:-.02em;margin:18px 0 20px}
+.hero .lead{font-size:18px;color:rgba(255,255,255,.76);max-width:480px;margin-bottom:30px}
+.badge{display:inline-flex;align-items:center;gap:9px;border-radius:999px;padding:7px 16px;font-size:13px;font-weight:600;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);color:#a7f3c4}
+.badge.gold{background:rgba(212,168,106,.12);border-color:rgba(212,168,106,.35);color:#ecd3a1}
+.dot{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulse 2s ease-out infinite}
+.cta-row{display:flex;gap:12px;flex-wrap:wrap}
+.hl{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:26px}
+.hl div{display:flex;align-items:center;gap:10px}
+.hl i{font-style:normal;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.28)}
+.hl b{display:block;font-size:13px}
+.hl small{color:rgba(255,255,255,.55);font-size:12px}
+.quote{border-left:3px solid var(--gold);padding:4px 0 4px 16px;margin-bottom:28px;max-width:400px;color:rgba(255,255,255,.88)}
+.quote p{font-family:'Fraunces',Georgia,serif;font-style:italic;font-size:16px}
+.quote span{display:block;margin-top:8px;font-size:13px;font-weight:600;color:var(--gold)}
+
+/* hero noticeboard (the one memorable element) */
+.board{position:relative;height:380px}
+.note{position:absolute;width:290px;background:#fff;color:var(--ink);border-radius:14px;padding:16px 18px;box-shadow:0 24px 50px rgba(0,0,0,.35);display:flex;gap:14px;align-items:flex-start;border-top:4px solid var(--c)}
+.note i{font-style:normal;font-size:22px;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 14%,white);flex-shrink:0}
+.note b{display:block;font-size:15px}
+.note span{font-size:13px;color:var(--mut)}
+.note:nth-child(1){top:0;left:0;transform:rotate(-3deg);--c:#16a34a;animation:rise .8s .3s both}
+.note:nth-child(2){top:128px;right:0;transform:rotate(2.5deg);--c:#2563eb;animation:rise .8s .5s both}
+.note:nth-child(3){top:256px;left:28px;transform:rotate(-1.5deg);--c:#b8862f;animation:rise .8s .7s both}
+.hero-in>div:first-child>*{animation:rise .7s both}
+.hero-in>div:first-child>*:nth-child(2){animation-delay:.1s}
+.hero-in>div:first-child>*:nth-child(3){animation-delay:.2s}
+.hero-in>div:first-child>*:nth-child(n+4){animation-delay:.3s}
+
+/* ticker */
+.ticker{position:relative;z-index:2;border-top:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.28);padding:13px 0;overflow:hidden}
+.ticker-track{display:flex;width:max-content;animation:marquee 28s linear infinite}
+.ticker:hover .ticker-track{animation-play-state:paused}
+.ticker-item{display:flex;align-items:center;gap:10px;padding:0 28px;white-space:nowrap;font-size:14px;color:rgba(255,255,255,.72);border-right:1px solid rgba(255,255,255,.1)}
+
+/* stats */
+.stats{background:#fff;border-bottom:1px solid var(--line)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr)}
+.stat{padding:32px 16px;text-align:center;border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+.stat b{display:block;font-family:'Fraunces',Georgia,serif;font-size:clamp(32px,4.4vw,46px);font-weight:600;line-height:1;font-variant-numeric:tabular-nums;color:var(--forest)}
+.stat span{display:block;margin-top:8px;font-size:14px;color:var(--mut)}
+.stat i{font-style:normal;font-size:22px;display:block;margin-bottom:8px}
+.tagline{text-align:center;padding:22px 24px 30px;font-family:'Fraunces',Georgia,serif;font-style:italic;font-size:17px;color:#2f4a3b}
+.tagline small{display:block;margin-top:8px;font-family:'Inter',sans-serif;font-style:normal;font-size:13px;font-weight:600;color:var(--mut)}
+
+/* cards */
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 3px rgba(10,42,28,.05);transition:transform .2s,box-shadow .2s,border-color .2s}
+.card.hov:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(10,42,28,.12);border-color:rgba(22,163,74,.45)}
+.why{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.why .card{padding:28px 24px}
+.why i{font-style:normal;font-size:26px;width:54px;height:54px;border-radius:14px;display:grid;place-items:center;margin-bottom:16px;background:var(--bg)}
+.why h3{font-family:'Fraunces',Georgia,serif;font-size:21px;font-weight:600;margin-bottom:8px}
+.why p{color:var(--mut);font-size:15px}
+.big-quote{margin-top:40px;padding:28px 32px;text-align:center}
+.big-quote p{font-family:'Fraunces',Georgia,serif;font-style:italic;font-size:19px;max-width:700px;margin:0 auto 10px}
+.big-quote span{font-size:14px;font-weight:600;color:var(--mut)}
+
+/* quick access */
+.qa-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px}
+.qa-head h2{font-family:'Fraunces',Georgia,serif;font-size:26px;font-weight:600}
+.qa-head span{font-size:14px;color:var(--mut)}
+.qa{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.qa .card{padding:20px;display:flex;align-items:center;gap:16px;height:100%}
+.qa i{font-style:normal;font-size:24px;width:52px;height:52px;border-radius:14px;display:grid;place-items:center;flex-shrink:0}
+.qa b{display:block;font-size:16px}
+.qa small{color:var(--mut);font-size:13px;line-height:1.4;display:block}
+.qa em{margin-left:auto;font-style:normal;font-size:22px;color:#9aa8a0}
+
+/* announcements + schedule */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.split.one{grid-template-columns:1fr}
+.split h2{font-family:'Fraunces',Georgia,serif;font-size:22px;font-weight:600}
+.split-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px}
+.split-top a,.split-top span{font-size:14px;color:var(--leaf);font-weight:600}
+.ann{display:flex;gap:14px;padding:16px;margin-bottom:12px;align-items:flex-start}
+.ann i{font-style:normal;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#eaf8ef;flex-shrink:0}
+.ann-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.ann-top b{color:var(--leaf)}
+.ann-top span{color:#8a9890;white-space:nowrap}
+.ann h4{font-size:15px;margin-bottom:4px}
+.ann p{font-size:14px;color:var(--mut)}
+.empty{padding:36px 24px;text-align:center;color:var(--mut)}
+.empty i{font-style:normal;display:block;font-size:34px;margin-bottom:10px}
+.empty b{display:block;color:var(--ink);margin-bottom:4px}
+
+/* features bento */
+.bento{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.bento .card{overflow:hidden;display:flex;flex-direction:column}
+.bento .s2{grid-column:span 2}
+.fvt{position:relative;height:190px;background:#0e2317;overflow:hidden}
+.bento .s2 .fvt{height:230px}
+.fvt video,.fvt img{width:100%;height:100%;object-fit:cover;display:block}
+.fvt .ph{width:100%;height:100%;display:grid;place-items:center;font-size:36px}
+.fvt::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(0,0,0,.4))}
+.fvt-badge{position:absolute;z-index:2;top:12px;left:12px;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+.bento-body{padding:20px 22px 24px}
+.bento-body h3{font-family:'Fraunces',Georgia,serif;font-size:20px;font-weight:600;margin-bottom:6px}
+.bento-body p{color:var(--mut);font-size:15px}
+
+/* post cards (shared by all three showcase views) */
+.posts{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:20px}
+.pc{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.pc:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(10,42,28,.14)}
+.pc-media{position:relative;aspect-ratio:16/9;background:#12261b;cursor:pointer}
+.pc-media img,.pc-media iframe{width:100%;height:100%;object-fit:cover;border:0;display:block}
+.pc-ph{width:100%;height:100%;display:grid;place-items:center;font-size:42px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 55%,#04160d),#12261b)}
+.pc-play{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.28);transition:background .2s}
+.pc-media:hover .pc-play{background:rgba(0,0,0,.12)}
+.pc-play span{width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.95);display:grid;place-items:center;color:var(--ink);font-size:18px;padding-left:3px}
+.pc-pin{position:absolute;top:10px;left:10px;background:var(--leaf);color:#fff;border-radius:8px;padding:3px 9px;font-size:12px;font-weight:700}
+.pc-views{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.65);color:#fff;border-radius:8px;padding:3px 9px;font-size:12px}
+.pc-body{padding:16px 18px 18px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips:not(:empty){margin-bottom:10px}
+.chip{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
+.c1{background:#eaf8ef;color:#15803d}.c2{background:#e8f0fe;color:#2563eb}.c3{background:#f1ecfe;color:#7c3aed}
+.pc h4{font-size:16px;font-weight:700;line-height:1.35;margin-bottom:6px}
+.pc p{font-size:14px;color:var(--mut);margin-bottom:12px}
+.pc-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:#8a9890}
+.pc-foot a{background:var(--forest);color:#86efac;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;white-space:nowrap}
+.pc-foot a:hover{background:var(--leaf);color:#fff}
+.pc.dk{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12);color:#fff}
+.pc.dk p{color:#9db0a5}.pc.dk .pc-foot{color:#7e9488}
+.pc.dk .pc-foot a{background:var(--c);color:#fff}
+.pc.dk .c1{background:rgba(74,222,128,.15);color:#86efac}.pc.dk .c2{background:rgba(96,165,250,.15);color:#93c5fd}.pc.dk .c3{background:rgba(167,139,250,.18);color:#c4b5fd}
+.filters{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:32px}
+.pill{border:1px solid var(--line);background:#fff;color:#33463b;border-radius:999px;padding:7px 18px;font-size:14px;font-weight:600;transition:background .15s,color .15s}
+.pill:hover{border-color:var(--leaf)}
+.pill.on{background:var(--leaf);border-color:var(--leaf);color:#fff}
+.join{text-align:center;margin-top:48px}
+.join p{color:var(--mut);margin-bottom:14px}
+
+/* faculty explorer (dark) */
+.fx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.fx-card{text-align:left;color:#fff;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:22px;transition:transform .2s,background .2s,border-color .2s;overflow:hidden}
+.fx-card:hover{transform:translateY(-4px);background:rgba(255,255,255,.1);border-color:var(--c,rgba(255,255,255,.35))}
+.fx-card i{font-style:normal;font-size:34px;display:block;margin-bottom:12px}
+.fx-card h3{font-size:17px;font-weight:700;margin-bottom:6px;line-height:1.3}
+.fx-card p{font-size:14px;color:#9db0a5;margin-bottom:12px}
+.fx-meta{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#7e9488}
+.fx-count{background:var(--c,#16a34a);color:#fff;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.fx-go{margin-top:14px;font-size:14px;font-weight:600;color:var(--c,#4ade80)}
+.fx-card.dept{padding:0;border-color:color-mix(in srgb,var(--c) 40%,transparent)}
+.fx-thumb{height:90px;position:relative;overflow:hidden;display:grid;place-items:center;font-size:34px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 40%,transparent),color-mix(in srgb,var(--c) 12%,transparent))}
+.fx-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.6}
+.fx-thumb .fx-count{position:absolute;top:10px;right:10px}
+.fx-dept-body{padding:14px 16px 16px}
+.fx-dept-body small{display:block;color:var(--c);font-weight:700;font-size:13px;margin-bottom:4px}
+.fx-dept-body h4{font-size:15px;font-weight:700}
+.crumbs{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:28px;color:#6f857a}
+.crumb{background:rgba(255,255,255,.1);border:0;color:#fff;border-radius:8px;padding:7px 14px;font-size:14px}
+.crumb:hover{background:rgba(255,255,255,.2)}
+.fx-title{font-family:'Fraunces',Georgia,serif;font-size:24px;font-weight:600;color:#fff;margin:0 0 18px}
+.fx-sub{font-size:17px;font-weight:700;color:#fff;margin-bottom:14px}
+.fx-sep{height:1px;background:rgba(255,255,255,.12);margin:8px 0 28px}
+.dept-head{display:flex;align-items:center;gap:18px;border-radius:18px;padding:22px 26px;margin-bottom:28px;border:1px solid color-mix(in srgb,var(--c) 40%,transparent);background:linear-gradient(120deg,color-mix(in srgb,var(--c) 22%,transparent),transparent)}
+.dept-head i{font-style:normal;font-size:42px}
+.dept-head h3{font-family:'Fraunces',Georgia,serif;font-size:24px;font-weight:600}
+.dept-head p{color:#9db0a5;font-size:14px;margin-top:4px}
+.dept-head div:last-child{margin-left:auto;text-align:right}
+.dept-head b{display:block;font-size:28px;font-family:'Fraunces',Georgia,serif}
+.dept-head small{color:#7e9488}
+.msg{text-align:center;padding:56px 24px;color:#9db0a5}
+.msg i{font-style:normal;font-size:44px;display:block;margin-bottom:10px}
+.msg h3{color:#fff;font-size:19px;margin-bottom:6px}
+
+/* final call + footer */
+.final{position:relative;overflow:hidden;background:var(--deep);text-align:center;color:#fff;padding:80px 24px}
+.final::before{content:'';position:absolute;left:50%;top:-180px;width:520px;height:520px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,rgba(74,222,128,.16),transparent 70%)}
+.final>div{position:relative}
+.final h2{font-family:'Fraunces',Georgia,serif;font-size:clamp(28px,4vw,40px);font-weight:600;margin-bottom:10px}
+.final p{color:rgba(255,255,255,.6);margin-bottom:28px;font-size:17px}
+.foot{background:#fff;border-top:1px solid var(--line);padding:24px;text-align:center;color:#8a9890;font-size:14px}
+.loading{text-align:center;padding:90px;color:var(--mut)}
+
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.55)}70%{box-shadow:0 0 0 9px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
+@keyframes marquee{to{transform:translateX(-50%)}}
+@keyframes rise{from{opacity:0;translate:0 22px}to{opacity:1;translate:0 0}}
+
+@media (max-width:860px){
+  .hero-in{grid-template-columns:1fr;padding-top:56px;gap:0}
+  .board{display:none}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .stat:nth-child(2){border-right:0}
+  .stat:nth-child(-n+2){border-bottom:1px solid var(--line)}
+  .why,.split,.bento{grid-template-columns:1fr}
+  .bento .s2{grid-column:auto}
+  .sec{padding:56px 0}
+  .dept-head{flex-wrap:wrap}
+}
+@media (prefers-reduced-motion:reduce){
+  .uw *,.uw *::before{animation:none!important;transition:none!important}
+}
+`
+
 // Plays a looping muted preview clip only while it's actually on screen
 // (saves data/battery when scrolled away), and falls back to a plain
 // poster image if the visitor has "reduce motion" turned on.
@@ -57,68 +308,79 @@ function FeatureVideoThumb({ src, poster, icon, badgeColor }: {
   }, [reducedMotion])
 
   return (
-    <div style={{
-      position: 'relative',
-      height: 140,
-      margin: '-26px -26px 16px',
-      overflow: 'hidden',
-      borderRadius: '14px 14px 0 0',
-      background: '#0e2317',
-    }}>
+    <div className="fvt">
       {reducedMotion ? (
         poster ? (
-          <img src={poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <img src={poster} alt="" />
         ) : (
-          <div style={{
-            width: '100%', height: '100%', background: badgeColor + '22',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30,
-          }}>
-            {icon}
-          </div>
+          <div className="ph" style={{ background: badgeColor + '22' }}>{icon}</div>
         )
       ) : (
-        <video
-          ref={videoRef}
-          src={src}
-          poster={poster}
-          muted
-          loop
-          playsInline
-          preload="none"
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
+        <video ref={videoRef} src={src} poster={poster} muted loop playsInline preload="none" />
       )}
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,0.35) 100%)',
-      }} />
-      <div style={{
-        position: 'absolute', top: 10, left: 10,
-        width: 30, height: 30, borderRadius: 8,
-        background: badgeColor,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 15, boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-      }}>
-        {icon}
-      </div>
+      <div className="fvt-badge" style={{ background: badgeColor }}>{icon}</div>
     </div>
   )
 }
 
-interface ShowcasePost {
-  _id: string
-  title: string
-  description?: string
-  faculty?: string
-  department?: string
-  tag?: string
-  thumbnail?: string
-  embedUrl?: string
-  videoUrl?: string
-  views?: number
-  isPinned?: boolean
-  postedByName?: string
-  createdAt: string
+// One post card used by every showcase view (campus, faculty, department).
+function PostCard({ post, playing, onToggle, accent = '#16a34a', dark = false, scope = false }: {
+  post: ShowcasePost
+  playing: boolean
+  onToggle: () => void
+  accent?: string
+  dark?: boolean
+  scope?: boolean
+}) {
+  return (
+    <div className={`pc${dark ? ' dk' : ''}`} style={{ ['--c' as any]: accent }}>
+      <div className="pc-media" onClick={onToggle}>
+        {playing && post.embedUrl ? (
+          <iframe
+            src={post.embedUrl}
+            title={post.title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
+          <>
+            {post.thumbnail ? (
+              <img
+                src={post.thumbnail}
+                alt={post.title}
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+              />
+            ) : (
+              <div className="pc-ph">🎬</div>
+            )}
+            <div className="pc-play"><span>▶</span></div>
+            {post.isPinned && <div className="pc-pin">📌 Featured</div>}
+            <div className="pc-views">👁 {post.views || 0}</div>
+          </>
+        )}
+      </div>
+      <div className="pc-body">
+        <div className="chips">
+          {scope && post.faculty && <span className="chip c1">{post.faculty}</span>}
+          {scope && post.department && <span className="chip c2">{post.department}</span>}
+          {post.tag && <span className="chip c3">#{post.tag}</span>}
+        </div>
+        <h4>{post.title}</h4>
+        {post.description && (
+          <p>{post.description.length > 80 ? post.description.slice(0, 80) + '...' : post.description}</p>
+        )}
+        <div className="pc-foot">
+          <span>
+            {post.postedByName ? `By ${post.postedByName} • ` : ''}
+            {new Date(post.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+          {post.videoUrl && (
+            <a href={post.videoUrl} target="_blank" rel="noopener noreferrer">Watch ↗</a>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // Faculty → Department → Posts explorer. Visitors drill down from a grid of
@@ -133,17 +395,17 @@ function FacultyShowcaseSection() {
   const [playingId, setPlayingId] = useState<string | null>(null)
 
   const LEARNING_TYPE_COLORS: Record<string, string> = {
-    language_linguistics: '#7c3aed',
-    science_medicine: '#0891b2',
-    arts_performance: '#be185d',
-    agriculture_environment: '#16a34a',
-    engineering_technology: '#2563eb',
-    business_economics: '#d97706',
-    journalism_media: '#dc2626',
-    law_studies: '#4338ca',
-    health_sciences: '#1e3a5f',
-    education_studies: '#2563eb',
-    general_studies: '#16a34a',
+    language_linguistics: '#a78bfa',
+    science_medicine: '#22d3ee',
+    arts_performance: '#f472b6',
+    agriculture_environment: '#4ade80',
+    engineering_technology: '#60a5fa',
+    business_economics: '#fbbf24',
+    journalism_media: '#f87171',
+    law_studies: '#818cf8',
+    health_sciences: '#5eead4',
+    education_studies: '#60a5fa',
+    general_studies: '#4ade80',
   }
 
   const LEARNING_TYPE_ICONS: Record<string, string> = {
@@ -208,78 +470,34 @@ function FacultyShowcaseSection() {
 
   if (faculties.length === 0) return null
 
-  return (
-    <div style={{ background: '#0f172a', padding: '64px 24px' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+  const deptColor = (d: any) => LEARNING_TYPE_COLORS[d?.learningType] || '#4ade80'
+  const deptIcon = (d: any) => LEARNING_TYPE_ICONS[d?.learningType] || '📚'
 
-        {/* Section header */}
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: 999, padding: '4px 16px', marginBottom: 12,
-            fontSize: 13, color: '#94a3b8', fontWeight: 600,
-          }}>
-            🏛️ Explore by Faculty
-          </div>
-          <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 800, color: 'white', marginBottom: 8 }}>
-            What's Happening Across Campus
-          </h2>
-          <p style={{ fontSize: 16, color: '#94a3b8', maxWidth: 500, margin: '0 auto' }}>
-            Explore real activities from every faculty and department
-          </p>
+  return (
+    <section className="sec sec-dark">
+      <div className="wrap">
+        <div className="head c">
+          <div className="rule" />
+          <h2>What's happening across campus</h2>
+          <p>Explore real activities from every faculty and department.</p>
         </div>
 
         {/* ===== FACULTY GRID ===== */}
         {!selectedFaculty && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
+          <div className="fx-grid">
             {faculties.map(faculty => (
-              <div
-                key={faculty._id}
-                onClick={() => handleFacultyClick(faculty)}
-                style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 16, padding: '20px',
-                  cursor: 'pointer', transition: 'all 0.2s',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
-                  e.currentTarget.style.transform = 'translateY(-4px)'
-                  e.currentTarget.style.border = '1px solid rgba(255,255,255,0.3)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.border = '1px solid rgba(255,255,255,0.1)'
-                }}
-              >
-                <div style={{ fontSize: 36, marginBottom: 12 }}>🏛️</div>
-                <h3 style={{ fontSize: 15, fontWeight: 800, color: 'white', marginBottom: 6, lineHeight: 1.3 }}>
-                  {faculty.name}
-                </h3>
+              <button key={faculty._id} className="fx-card" onClick={() => handleFacultyClick(faculty)}>
+                <i>🏛️</i>
+                <h3>{faculty.name}</h3>
                 {faculty.description && (
-                  <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 10, lineHeight: 1.5 }}>
-                    {faculty.description.slice(0, 60)}{faculty.description.length > 60 ? '...' : ''}
-                  </p>
+                  <p>{faculty.description.slice(0, 60)}{faculty.description.length > 60 ? '...' : ''}</p>
                 )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 12, color: '#64748b' }}>
-                    {faculty.departments?.length} department{faculty.departments?.length !== 1 ? 's' : ''}
-                  </span>
-                  {faculty.postCount > 0 && (
-                    <span style={{
-                      background: '#16a34a', color: 'white',
-                      padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700,
-                    }}>
-                      {faculty.postCount} posts
-                    </span>
-                  )}
+                <div className="fx-meta">
+                  <span>{faculty.departments?.length} department{faculty.departments?.length !== 1 ? 's' : ''}</span>
+                  {faculty.postCount > 0 && <span className="fx-count">{faculty.postCount} posts</span>}
                 </div>
-                <div style={{ marginTop: 14, fontSize: 12, color: '#4ade80', fontWeight: 600 }}>
-                  Explore departments →
-                </div>
-              </div>
+                <div className="fx-go">Explore departments</div>
+              </button>
             ))}
           </div>
         )}
@@ -287,128 +505,61 @@ function FacultyShowcaseSection() {
         {/* ===== DEPARTMENT GRID ===== */}
         {selectedFaculty && !selectedDept && (
           <div>
-            {/* Breadcrumb */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
-              <button
-                onClick={() => setSelectedFaculty(null)}
-                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: 'white', fontSize: 13 }}
-              >
-                ← All Faculties
-              </button>
-              <span style={{ color: '#64748b' }}>›</span>
-              <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>{selectedFaculty.name}</span>
+            <div className="crumbs">
+              <button className="crumb" onClick={() => setSelectedFaculty(null)}>← All faculties</button>
+              <span>›</span>
+              <b style={{ color: '#fff' }}>{selectedFaculty.name}</b>
             </div>
 
             {/* Faculty-level posts */}
             {facultyPosts.length > 0 && (
-              <div style={{ marginBottom: 32 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: 'white', marginBottom: 14 }}>
-                  📌 Faculty Posts
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14, marginBottom: 24 }}>
+              <div style={{ marginBottom: 12 }}>
+                <h3 className="fx-sub">📌 Faculty posts</h3>
+                <div className="posts" style={{ marginBottom: 24 }}>
                   {facultyPosts.map(post => (
-                    <div key={post._id} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, overflow: 'hidden' }}>
-                      <div style={{ position: 'relative', aspectRatio: '16/9', background: '#1a1a2e', cursor: 'pointer' }}
-                        onClick={() => setPlayingId(playingId === post._id ? null : post._id)}>
-                        {playingId === post._id && post.embedUrl ? (
-                          <iframe src={post.embedUrl} style={{ width: '100%', height: '100%', border: 'none' }} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-                        ) : (
-                          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                            {post.thumbnail
-                              ? <img src={post.thumbnail} alt={post.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #052e16, #16a34a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>🎬</div>
-                            }
-                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>▶</div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div style={{ padding: '12px 16px' }}>
-                        <h4 style={{ fontSize: 13, fontWeight: 700, color: 'white', marginBottom: 4 }}>{post.title}</h4>
-                        {post.description && (
-                          <p style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>
-                            {post.description.length > 60 ? post.description.slice(0, 60) + '...' : post.description}
-                          </p>
-                        )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: 10, color: '#64748b' }}>{post.postedByName}</span>
-                          <a href={post.videoUrl} target="_blank" rel="noopener noreferrer" style={{ background: '#16a34a', color: 'white', padding: '4px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700, textDecoration: 'none' }}>Watch ↗</a>
-                        </div>
-                      </div>
-                    </div>
+                    <PostCard
+                      key={post._id}
+                      post={post}
+                      dark
+                      accent="#4ade80"
+                      playing={playingId === post._id}
+                      onToggle={() => setPlayingId(playingId === post._id ? null : post._id)}
+                    />
                   ))}
                 </div>
-                <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', marginBottom: 24 }} />
+                <div className="fx-sep" />
               </div>
             )}
 
-            <h3 style={{ fontSize: 20, fontWeight: 800, color: 'white', marginBottom: 20 }}>
-              Departments in {selectedFaculty.name}
-            </h3>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
-              {selectedFaculty.departments?.map((dept: any) => {
-                const color = LEARNING_TYPE_COLORS[dept.learningType] || '#16a34a'
-                const icon = LEARNING_TYPE_ICONS[dept.learningType] || '📚'
-                return (
-                  <div
-                    key={dept._id}
-                    onClick={() => loadDeptPosts(selectedFaculty, dept)}
-                    style={{
-                      background: 'rgba(255,255,255,0.05)',
-                      border: `1px solid ${color}40`,
-                      borderRadius: 14, overflow: 'hidden',
-                      cursor: 'pointer', transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.transform = 'translateY(-4px)'
-                      e.currentTarget.style.border = `1px solid ${color}`
-                      e.currentTarget.style.background = `${color}15`
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.transform = 'translateY(0)'
-                      e.currentTarget.style.border = `1px solid ${color}40`
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
-                    }}
-                  >
-                    {/* Latest thumbnail or gradient */}
-                    <div style={{ height: 80, background: dept.latestThumbnail ? 'transparent' : `linear-gradient(135deg, ${color}40, ${color}20)`, position: 'relative', overflow: 'hidden' }}>
-                      {dept.latestThumbnail ? (
-                        <img src={dept.latestThumbnail} alt={dept.name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 32 }}>
-                          {icon}
-                        </div>
-                      )}
-                      {dept.postCount > 0 && (
-                        <div style={{
-                          position: 'absolute', top: 8, right: 8,
-                          background: color, color: 'white',
-                          borderRadius: 999, padding: '2px 8px', fontSize: 11, fontWeight: 700,
-                        }}>
-                          {dept.postCount} posts
-                        </div>
-                      )}
-                    </div>
-
-                    <div style={{ padding: '12px 14px' }}>
-                      <div style={{ fontSize: 11, color, fontWeight: 700, marginBottom: 3 }}>
-                        {icon} {dept.learningType?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                      </div>
-                      <h4 style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0 }}>{dept.name}</h4>
-                      {dept.description && (
-                        <p style={{ fontSize: 11, color: '#64748b', marginTop: 4, lineHeight: 1.4 }}>
-                          {dept.description.slice(0, 50)}{dept.description.length > 50 ? '...' : ''}
-                        </p>
-                      )}
-                      <div style={{ marginTop: 10, fontSize: 11, color, fontWeight: 600 }}>
-                        {dept.postCount > 0 ? `View ${dept.postCount} post${dept.postCount !== 1 ? 's' : ''} →` : 'No posts yet'}
-                      </div>
+            <h3 className="fx-title">Departments in {selectedFaculty.name}</h3>
+            <div className="fx-grid">
+              {selectedFaculty.departments?.map((dept: any) => (
+                <button
+                  key={dept._id}
+                  className="fx-card dept"
+                  style={{ ['--c' as any]: deptColor(dept) }}
+                  onClick={() => loadDeptPosts(selectedFaculty, dept)}
+                >
+                  <div className="fx-thumb">
+                    {dept.latestThumbnail ? <img src={dept.latestThumbnail} alt={dept.name} /> : deptIcon(dept)}
+                    {dept.postCount > 0 && <span className="fx-count">{dept.postCount} posts</span>}
+                  </div>
+                  <div className="fx-dept-body">
+                    <small>
+                      {deptIcon(dept)} {dept.learningType?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                    </small>
+                    <h4>{dept.name}</h4>
+                    {dept.description && (
+                      <p style={{ fontSize: 13, color: '#8ea398', marginTop: 4 }}>
+                        {dept.description.slice(0, 50)}{dept.description.length > 50 ? '...' : ''}
+                      </p>
+                    )}
+                    <div className="fx-go" style={{ marginTop: 10, fontSize: 13 }}>
+                      {dept.postCount > 0 ? `View ${dept.postCount} post${dept.postCount !== 1 ? 's' : ''}` : 'No posts yet'}
                     </div>
                   </div>
-                )
-              })}
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -416,157 +567,55 @@ function FacultyShowcaseSection() {
         {/* ===== DEPARTMENT POSTS WALL ===== */}
         {selectedFaculty && selectedDept && (
           <div>
-            {/* Breadcrumb */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28, flexWrap: 'wrap' }}>
-              <button
-                onClick={() => { setSelectedFaculty(null); setSelectedDept(null) }}
-                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: 'white', fontSize: 13 }}
-              >
-                All Faculties
-              </button>
-              <span style={{ color: '#64748b' }}>›</span>
-              <button
-                onClick={() => setSelectedDept(null)}
-                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: '#94a3b8', fontSize: 13 }}
-              >
-                {selectedFaculty.name}
-              </button>
-              <span style={{ color: '#64748b' }}>›</span>
-              <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>{selectedDept.name}</span>
+            <div className="crumbs">
+              <button className="crumb" onClick={() => { setSelectedFaculty(null); setSelectedDept(null) }}>All faculties</button>
+              <span>›</span>
+              <button className="crumb" onClick={() => setSelectedDept(null)}>{selectedFaculty.name}</button>
+              <span>›</span>
+              <b style={{ color: '#fff' }}>{selectedDept.name}</b>
             </div>
 
-            {/* Dept header */}
-            <div style={{
-              background: `linear-gradient(135deg, ${LEARNING_TYPE_COLORS[selectedDept.learningType] || '#16a34a'}30, transparent)`,
-              border: `1px solid ${LEARNING_TYPE_COLORS[selectedDept.learningType] || '#16a34a'}40`,
-              borderRadius: 16, padding: '20px 24px', marginBottom: 28,
-              display: 'flex', alignItems: 'center', gap: 16,
-            }}>
-              <div style={{ fontSize: 40 }}>{LEARNING_TYPE_ICONS[selectedDept.learningType] || '📚'}</div>
+            <div className="dept-head" style={{ ['--c' as any]: deptColor(selectedDept) }}>
+              <i>{deptIcon(selectedDept)}</i>
               <div>
-                <h3 style={{ fontSize: 20, fontWeight: 800, color: 'white', margin: 0 }}>{selectedDept.name}</h3>
-                <p style={{ fontSize: 13, color: '#94a3b8', margin: '4px 0 0' }}>
+                <h3>{selectedDept.name}</h3>
+                <p>
                   {selectedFaculty.name}
                   {selectedDept.description ? ` • ${selectedDept.description}` : ''}
                 </p>
               </div>
-              <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                <div style={{ fontSize: 24, fontWeight: 800, color: 'white' }}>{deptPosts.length}</div>
-                <div style={{ fontSize: 12, color: '#64748b' }}>posts</div>
+              <div>
+                <b>{deptPosts.length}</b>
+                <small>posts</small>
               </div>
             </div>
 
-            {/* Posts */}
             {loadingPosts ? (
-              <div style={{ textAlign: 'center', padding: '48px', color: '#64748b' }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>⏳</div>
-                <p>Loading posts...</p>
-              </div>
+              <div className="msg"><i>⏳</i><p>Loading posts...</p></div>
             ) : deptPosts.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 24px' }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>🎬</div>
-                <h3 style={{ color: 'white', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
-                  No posts yet
-                </h3>
-                <p style={{ color: '#64748b', fontSize: 14 }}>
-                  The {selectedDept.name} department hasn't posted anything yet.
-                  Check back soon!
-                </p>
+              <div className="msg">
+                <i>🎬</i>
+                <h3>No posts yet</h3>
+                <p>The {selectedDept.name} department hasn't posted anything yet. Check back soon!</p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+              <div className="posts">
                 {deptPosts.map(post => (
-                  <div
+                  <PostCard
                     key={post._id}
-                    style={{
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: 14, overflow: 'hidden',
-                      transition: 'transform 0.2s',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
-                    onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                  >
-                    {/* Video/Thumbnail */}
-                    <div
-                      style={{ position: 'relative', aspectRatio: '16/9', background: '#1a1a2e', cursor: 'pointer' }}
-                      onClick={() => setPlayingId(playingId === post._id ? null : post._id)}
-                    >
-                      {playingId === post._id && post.embedUrl ? (
-                        <iframe
-                          src={post.embedUrl}
-                          style={{ width: '100%', height: '100%', border: 'none' }}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      ) : (
-                        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                          {post.thumbnail ? (
-                            <img src={post.thumbnail} alt={post.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          ) : (
-                            <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${LEARNING_TYPE_COLORS[selectedDept.learningType] || '#052e16'}60, #1a1a2e)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>
-                              🎬
-                            </div>
-                          )}
-                          {/* Play button */}
-                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-                              ▶
-                            </div>
-                          </div>
-                          {/* Views */}
-                          <div style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.7)', color: 'white', borderRadius: 4, padding: '2px 6px', fontSize: 10 }}>
-                            👁 {post.views || 0}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div style={{ padding: '14px 16px' }}>
-                      {post.tag && (
-                        <span style={{
-                          background: `${LEARNING_TYPE_COLORS[selectedDept.learningType] || '#16a34a'}30`,
-                          color: LEARNING_TYPE_COLORS[selectedDept.learningType] || '#4ade80',
-                          padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700, marginBottom: 6, display: 'inline-block',
-                        }}>
-                          #{post.tag}
-                        </span>
-                      )}
-                      <h3 style={{ fontSize: 14, fontWeight: 700, color: 'white', marginBottom: 4, lineHeight: 1.4 }}>
-                        {post.title}
-                      </h3>
-                      {post.description && (
-                        <p style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.5, marginBottom: 10 }}>
-                          {post.description.length > 70 ? post.description.slice(0, 70) + '...' : post.description}
-                        </p>
-                      )}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ fontSize: 10, color: '#64748b' }}>
-                          {post.postedByName} • {new Date(post.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </div>
-                        <a
-                          href={post.videoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            background: LEARNING_TYPE_COLORS[selectedDept.learningType] || '#16a34a',
-                            color: 'white', padding: '5px 12px', borderRadius: 6,
-                            fontSize: 11, fontWeight: 700, textDecoration: 'none',
-                          }}
-                        >
-                          Watch ↗
-                        </a>
-                      </div>
-                    </div>
-                  </div>
+                    post={post}
+                    dark
+                    accent={deptColor(selectedDept)}
+                    playing={playingId === post._id}
+                    onToggle={() => setPlayingId(playingId === post._id ? null : post._id)}
+                  />
                 ))}
               </div>
             )}
           </div>
         )}
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -640,203 +689,71 @@ function StatsBar() {
   ]
 
   return (
-    <div ref={ref} style={{
-      background: 'white',
-      borderTop: '1px solid #f3f4f6',
-      borderBottom: '1px solid #f3f4f6',
-      padding: '40px 24px',
-    }}>
-      <div style={{ maxWidth: 900, margin: '0 auto' }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-          gap: 0,
-        }}>
-          {stats.map((stat, i) => (
-            <div
-              key={stat.label}
-              style={{
-                textAlign: 'center',
-                padding: '16px 24px',
-                borderRight: i < stats.length - 1 ? '1px solid #f3f4f6' : 'none',
-              }}
-            >
-              <div style={{ fontSize: 28, marginBottom: 6 }}>{stat.icon}</div>
-              <div style={{
-                fontSize: 'clamp(28px, 4vw, 40px)',
-                fontWeight: 900,
-                color: '#052e16',
-                lineHeight: 1,
-                marginBottom: 4,
-                fontVariantNumeric: 'tabular-nums',
-              }}>
-                {stat.value.toLocaleString()}{stat.suffix}
-              </div>
-              <div style={{
-                fontSize: 13,
-                color: '#6b7280',
-                fontWeight: 500,
-              }}>
-                {stat.label}
-              </div>
+    <div ref={ref} className="stats">
+      <div className="wrap">
+        <div className="stats-grid">
+          {stats.map(stat => (
+            <div key={stat.label} className="stat">
+              <i>{stat.icon}</i>
+              <b>{stat.value.toLocaleString()}{stat.suffix}</b>
+              <span>{stat.label}</span>
             </div>
           ))}
         </div>
-
-        {/* Tagline */}
-        <div style={{
-          textAlign: 'center',
-          marginTop: 28,
-          paddingTop: 24,
-          borderTop: '1px solid #f3f4f6',
-        }}>
-          <p style={{
-            fontSize: 15,
-            color: '#374151',
-            fontStyle: 'italic',
-            margin: 0,
-          }}>
-            "Empowering the next generation of leaders, innovators and problem-solvers."
-          </p>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            marginTop: 10,
-          }}>
-            <div style={{ width: 32, height: 2, background: '#16a34a', borderRadius: 999 }} />
-            <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 600 }}>ESTABLISHED 2026</span>
-            <div style={{ width: 32, height: 2, background: '#16a34a', borderRadius: 999 }} />
-          </div>
+        <div className="tagline">
+          "Empowering the next generation of leaders, innovators and problem-solvers."
+          <small>Established 2026</small>
         </div>
       </div>
     </div>
   )
 }
 
-// Value-proposition section for logged-out visitors. Was previously
-// (incorrectly) declared as a function statement in the middle of Home()'s
-// JSX return — that doesn't compile. Moved out to a standalone component,
-// same as FeatureVideoThumb/StatsBar/ShowcaseSection above.
+// Value-proposition section for logged-out visitors.
 function WhyUniWeb() {
+  const cards = [
+    {
+      icon: '🎓',
+      title: 'World-class Learning',
+      desc: 'Live classes, lesson notes, coding sandboxes and quizzes — all in one place. Your child learns with the best tools available today.',
+      bg: '#eaf8ef',
+    },
+    {
+      icon: '💬',
+      title: 'Always Connected',
+      desc: 'Real-time chat between students and lecturers. Announcements reach every student instantly. No one is ever left behind.',
+      bg: '#e8f0fe',
+    },
+    {
+      icon: '🚀',
+      title: 'Real Opportunities',
+      desc: 'Our campus showcase is visible to the world. Talented students get noticed. The right opportunity finds them here.',
+      bg: '#f1ecfe',
+    },
+  ]
   return (
-    <div style={{
-      background: '#f8fafc',
-      padding: '64px 24px',
-    }}>
-      <div style={{ maxWidth: 900, margin: '0 auto' }}>
-
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <div style={{ width: 40, height: 2, background: '#d4a86a', margin: '0 auto 14px' }} />
-          <h2 style={{
-            fontSize: 'clamp(24px, 4vw, 36px)',
-            fontWeight: 800,
-            color: '#0e2317',
-            marginBottom: 12,
-            lineHeight: 1.2,
-          }}>
-            Why Choose UniWeb?
-          </h2>
-          <p style={{
-            fontSize: 16, color: '#6b7280',
-            maxWidth: 440, margin: '0 auto', lineHeight: 1.6,
-          }}>
-            More than a university platform — a complete academic ecosystem.
-          </p>
+    <section className="sec">
+      <div className="wrap">
+        <div className="head c">
+          <div className="rule" />
+          <h2>Why choose UniWeb?</h2>
+          <p>More than a university platform — a complete academic ecosystem.</p>
         </div>
-
-        {/* Three cards */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: 20,
-        }}>
-          {[
-            {
-              icon: '🎓',
-              title: 'World-class Learning',
-              desc: 'Live classes, lesson notes, coding sandboxes and quizzes — all in one place. Your child learns with the best tools available today.',
-              color: '#16a34a',
-              bg: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
-              border: '#bbf7d0',
-            },
-            {
-              icon: '💬',
-              title: 'Always Connected',
-              desc: 'Real-time chat between students and lecturers. Announcements reach every student instantly. No one is ever left behind.',
-              color: '#2563eb',
-              bg: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
-              border: '#bfdbfe',
-            },
-            {
-              icon: '🚀',
-              title: 'Real Opportunities',
-              desc: 'Our campus showcase is visible to the world. Talented students get noticed. The right opportunity finds them here.',
-              color: '#7c3aed',
-              bg: 'linear-gradient(135deg, #f5f3ff, #ede9fe)',
-              border: '#ddd6fe',
-            },
-          ].map(card => (
-            <div
-              key={card.title}
-              style={{
-                background: card.bg,
-                border: `1px solid ${card.border}`,
-                borderRadius: 16,
-                padding: '28px 24px',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-              }}
-            >
-              <div style={{
-                width: 52, height: 52, borderRadius: 14,
-                background: 'white',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 26, marginBottom: 16,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              }}>
-                {card.icon}
-              </div>
-              <h3 style={{
-                fontSize: 17, fontWeight: 800,
-                color: '#0e2317', marginBottom: 10,
-              }}>
-                {card.title}
-              </h3>
-              <p style={{
-                fontSize: 14, color: '#4b5563',
-                lineHeight: 1.7, margin: 0,
-              }}>
-                {card.desc}
-              </p>
+        <div className="why">
+          {cards.map(card => (
+            <div key={card.title} className="card hov">
+              <i style={{ background: card.bg }}>{card.icon}</i>
+              <h3>{card.title}</h3>
+              <p>{card.desc}</p>
             </div>
           ))}
         </div>
-
-        {/* Bottom quote */}
-        <div style={{
-          marginTop: 48, textAlign: 'center',
-          padding: '24px 32px',
-          background: 'white',
-          borderRadius: 14,
-          border: '1px solid #f3f4f6',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
-        }}>
-          <p style={{
-            fontSize: 17, fontStyle: 'italic',
-            color: '#1f2937', margin: '0 0 8px',
-            lineHeight: 1.6,
-          }}>
-            "Your child's future starts with the right environment. UniWeb provides exactly that — a modern, connected and inspiring academic home."
-          </p>
-          <span style={{ fontSize: 13, color: '#9ca3af', fontWeight: 600 }}>
-            — UniWeb Academic Platform
-          </span>
+        <div className="card big-quote">
+          <p>"Your child's future starts with the right environment. UniWeb provides exactly that — a modern, connected and inspiring academic home."</p>
+          <span>— UniWeb Academic Platform</span>
         </div>
-
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -871,226 +788,44 @@ function ShowcaseSection({ token }: { token: string | null }) {
   if (posts.length === 0) return null
 
   return (
-    <div style={{ background: '#f8fafc', padding: '60px 24px' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-
-        {/* Section header */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: '#f0fdf4', border: '1px solid #bbf7d0',
-            borderRadius: 999, padding: '4px 16px', marginBottom: 12,
-            fontSize: 13, color: '#16a34a', fontWeight: 600,
-          }}>
-            🎬 Campus Showcase
-          </div>
-          <h2 style={{ fontSize: 32, fontWeight: 800, color: '#1f2937', marginBottom: 8 }}>
-            See What's Happening at Our Campus
-          </h2>
-          <p style={{ fontSize: 16, color: '#6b7280', maxWidth: 500, margin: '0 auto' }}>
-            Real moments from our students, lecturers and departments.
-          </p>
+    <section className="sec sec-white">
+      <div className="wrap">
+        <div className="head c">
+          <div className="rule" />
+          <h2>See what's happening at our campus</h2>
+          <p>Real moments from our students, lecturers and departments.</p>
         </div>
 
-        {/* Filter tabs */}
         {faculties.length > 0 && (
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 32, flexWrap: 'wrap' }}>
+          <div className="filters">
             {['all', ...faculties].map(f => (
-              <button
-                key={f}
-                onClick={() => setActiveFilter(f)}
-                style={{
-                  padding: '6px 18px', borderRadius: 999, border: 'none',
-                  background: activeFilter === f ? '#16a34a' : 'white',
-                  color: activeFilter === f ? 'white' : '#374151',
-                  cursor: 'pointer', fontSize: 13, fontWeight: 600,
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                  textTransform: f === 'all' ? 'capitalize' : 'none',
-                }}
-              >
+              <button key={f} className={`pill${activeFilter === f ? ' on' : ''}`} onClick={() => setActiveFilter(f)}>
                 {f === 'all' ? '🌍 All' : f}
               </button>
             ))}
           </div>
         )}
 
-        {/* Video grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          gap: 20,
-        }}>
+        <div className="posts">
           {filtered.map(post => (
-            <div
+            <PostCard
               key={post._id}
-              style={{
-                background: 'white', borderRadius: 16,
-                overflow: 'hidden',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-              }}
-            >
-              {/* Video/Thumbnail */}
-              <div style={{ position: 'relative', aspectRatio: '16/9', background: '#1a1a2e', cursor: 'pointer' }}
-                onClick={() => setPlayingId(playingId === post._id ? null : post._id)}
-              >
-                {playingId === post._id && post.embedUrl ? (
-                  <iframe
-                    src={post.embedUrl}
-                    style={{ width: '100%', height: '100%', border: 'none' }}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                ) : (
-                  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                    {post.thumbnail ? (
-                      <img
-                        src={post.thumbnail}
-                        alt={post.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        onError={e => {
-                          (e.target as HTMLImageElement).style.display = 'none'
-                        }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: '100%', height: '100%',
-                        background: 'linear-gradient(135deg, #052e16, #16a34a)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 48,
-                      }}>
-                        🎬
-                      </div>
-                    )}
-                    {/* Play button overlay */}
-                    <div style={{
-                      position: 'absolute', inset: 0,
-                      background: 'rgba(0,0,0,0.3)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'background 0.2s',
-                    }}>
-                      <div style={{
-                        width: 56, height: 56, borderRadius: '50%',
-                        background: 'rgba(255,255,255,0.95)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 22,
-                      }}>
-                        ▶
-                      </div>
-                    </div>
-                    {/* Pinned badge */}
-                    {post.isPinned && (
-                      <div style={{
-                        position: 'absolute', top: 10, left: 10,
-                        background: '#16a34a', color: 'white',
-                        borderRadius: 6, padding: '3px 8px',
-                        fontSize: 11, fontWeight: 700,
-                      }}>
-                        📌 Featured
-                      </div>
-                    )}
-                    {/* Views */}
-                    <div style={{
-                      position: 'absolute', bottom: 10, right: 10,
-                      background: 'rgba(0,0,0,0.6)', color: 'white',
-                      borderRadius: 6, padding: '3px 8px', fontSize: 11,
-                    }}>
-                      👁 {post.views || 0}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Content */}
-              <div style={{ padding: '16px 18px' }}>
-                {/* Tags */}
-                <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-                  {post.faculty && (
-                    <span style={{
-                      background: '#f0fdf4', color: '#16a34a',
-                      padding: '2px 8px', borderRadius: 999,
-                      fontSize: 11, fontWeight: 600,
-                    }}>
-                      {post.faculty}
-                    </span>
-                  )}
-                  {post.department && (
-                    <span style={{
-                      background: '#eff6ff', color: '#2563eb',
-                      padding: '2px 8px', borderRadius: 999,
-                      fontSize: 11, fontWeight: 600,
-                    }}>
-                      {post.department}
-                    </span>
-                  )}
-                  {post.tag && (
-                    <span style={{
-                      background: '#f5f3ff', color: '#7c3aed',
-                      padding: '2px 8px', borderRadius: 999,
-                      fontSize: 11, fontWeight: 600,
-                    }}>
-                      #{post.tag}
-                    </span>
-                  )}
-                </div>
-
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1f2937', marginBottom: 6, lineHeight: 1.4 }}>
-                  {post.title}
-                </h3>
-
-                {post.description && (
-                  <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.5, marginBottom: 12 }}>
-                    {post.description.length > 80 ? post.description.slice(0, 80) + '...' : post.description}
-                  </p>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                    By {post.postedByName} •{' '}
-                    {new Date(post.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </div>
-                  {post.videoUrl && (
-                    <a
-                      href={post.videoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        background: '#052e16', color: '#4ade80',
-                        padding: '6px 14px', borderRadius: 8,
-                        fontSize: 12, fontWeight: 700, textDecoration: 'none',
-                        display: 'flex', alignItems: 'center', gap: 4,
-                      }}
-                    >
-                      Watch Full ↗
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
+              post={post}
+              scope
+              playing={playingId === post._id}
+              onToggle={() => setPlayingId(playingId === post._id ? null : post._id)}
+            />
           ))}
         </div>
 
-        {/* CTA for visitors */}
         {!token && (
-          <div style={{ textAlign: 'center', marginTop: 48 }}>
-            <p style={{ fontSize: 15, color: '#6b7280', marginBottom: 16 }}>
-              Want to be part of this community?
-            </p>
-            <a href="/register">
-              <button style={{
-                background: '#16a34a', color: 'white',
-                border: 'none', borderRadius: 10,
-                padding: '12px 32px', fontSize: 15, fontWeight: 700,
-                cursor: 'pointer',
-              }}>
-                Join UniWeb Today →
-              </button>
-            </a>
+          <div className="join">
+            <p>Want to be part of this community?</p>
+            <a href="/register"><button className="btn btn-p">Join UniWeb today</button></a>
           </div>
         )}
-
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -1143,8 +878,9 @@ export default function Home() {
   }
 
   if (loading) return (
-    <div style={{ textAlign: 'center', padding: 80 }}>
-      <p style={{ color: '#4b5563' }}>Loading...</p>
+    <div className="uw">
+      <style>{CSS}</style>
+      <div className="loading"><p>Loading...</p></div>
     </div>
   )
 
@@ -1155,361 +891,112 @@ export default function Home() {
     '🎓  Automatic promotion, every session',
   ]
 
+  const features = [
+    { icon: '💬', title: 'Real-time Chat', desc: 'Scoped chat rooms for your department and level.', color: '#15803d', video: '/videos/realtime.mp4' },
+    { icon: '📡', title: 'Live Classes', desc: 'Lecturers start live sessions instantly.', color: '#b8862f', video: '/videos/liveclass.mp4' },
+    { icon: '📢', title: 'Announcements', desc: 'Filtered by faculty, department, and level.', color: '#15803d', video: '/videos/annous.mp4' },
+    { icon: '🎥', title: 'Video Streaming', desc: 'WebRTC-powered peer-to-peer video.', color: '#0d9488', video: '/videos/stream.mp4' },
+    { icon: '🎓', title: 'Academic System', desc: 'Automatic student promotion each year.', color: '#b8862f', video: '/videos/gcu.mp4' },
+    { icon: '👥', title: 'Role-based Access', desc: 'Students, lecturers, and admins each see what they need.', color: '#0d9488', video: '/videos/rac.mp4' },
+  ]
+  const spans = ['s2', '', '', 's2', 's2', '']
+
+  const roleLabel = user
+    ? user.role === 'admin' ? 'Super Admin'
+      : user.role === 'faculty_admin' ? 'Faculty Admin'
+      : user.role === 'department_admin' ? 'Dept Admin'
+      : user.role === 'lecturer' ? 'Lecturer'
+      : `Student · ${user.level}`
+    : ''
+
+  const quickCards = user ? [
+    { icon: '💬', title: 'Chat', desc: 'Talk to your faculty and students', href: '/chat', bg: '#eaf8ef' },
+    { icon: '📡', title: 'Live Classes', desc: 'Start or join a live session', href: '/live', bg: '#e8f0fe' },
+    { icon: '📢', title: 'Announcements', desc: 'Stay updated with latest news', href: '/announcements', bg: '#fbf3e3' },
+    ...(user.role === 'admin' ? [{ icon: '⚙️', title: 'Admin Panel', desc: 'Manage the entire platform', href: '/admin', bg: '#fdecec' }] : []),
+    ...(user.role === 'faculty_admin' ? [{ icon: '🛡️', title: 'Faculty Panel', desc: 'Manage your faculty', href: '/faculty-admin', bg: '#f1ecfe' }] : []),
+  ] : []
+
   const token = getAuthToken()
 
   return (
-    <div style={{ background: '#f6f8f7', minHeight: 'calc(100vh - 60px)' }}>
+    <div className="uw">
+      <style>{CSS}</style>
 
-      {/* ===== GLOBAL: fonts + keyframes for this page ===== */}
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap');
+      {/* ===== HERO ===== */}
+      <section className="hero">
+        <div className="hero-bg" />
+        <div className="hero-wash" />
+        <div className="wrap hero-in">
+          <div>
+            {user ? (
+              <span className="badge"><span className="dot" />{greeting}, {roleLabel}</span>
+            ) : (
+              <span className="badge gold">🎓 Academic Platform</span>
+            )}
 
-        .uw-serif { font-family: 'Fraunces', Georgia, serif; }
-        .uw-mono  { font-family: 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 0.06em; }
-        .uw-body  { font-family: 'Inter', -apple-system, sans-serif; }
+            <h1>{user ? 'Welcome to UniWeb' : 'The Smart Academic Platform'}</h1>
 
-        @keyframes uw-float-a {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(24px, -28px); }
-        }
-        @keyframes uw-float-b {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(-18px, 22px); }
-        }
-        @keyframes uw-pulse {
-          0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.55); }
-          70% { box-shadow: 0 0 0 9px rgba(74,222,128,0); }
-          100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
-        }
-        @keyframes uw-pulse-teal {
-          0% { box-shadow: 0 0 0 0 rgba(45,212,191,0.55); }
-          70% { box-shadow: 0 0 0 8px rgba(45,212,191,0); }
-          100% { box-shadow: 0 0 0 0 rgba(45,212,191,0); }
-        }
-        @keyframes uw-marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .uw-ticker-track {
-          animation: uw-marquee 26s linear infinite;
-        }
-        .uw-ticker-wrap:hover .uw-ticker-track {
-          animation-play-state: paused;
-        }
-        .uw-card {
-          transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-        }
-        .uw-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 12px 28px rgba(11,35,23,0.10);
-          border-color: rgba(21,128,61,0.35) !important;
-        }
-        .uw-btn-primary {
-          transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
-        }
-        .uw-btn-primary:hover {
-          transform: translateY(-1px);
-          filter: brightness(1.05);
-          box-shadow: 0 10px 24px rgba(34,197,94,0.35);
-        }
-        .uw-btn-ghost {
-          transition: background 0.15s ease, border-color 0.15s ease;
-        }
-        .uw-btn-ghost:hover {
-          background: rgba(255,255,255,0.10);
-          border-color: rgba(212,168,106,0.6) !important;
-        }
-      `}</style>
-
-      {/* ===== HERO SECTION ===== */}
-      <div style={{
-        position: 'relative',
-        minHeight: 560,
-        overflow: 'hidden',
-        display: 'flex',
-        alignItems: 'center',
-        background: '#04160d',
-      }}>
-
-        {/* Background university photo */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundImage: 'url(/uniweb.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center top',
-          zIndex: 0,
-        }} />
-
-        {/* Tonal wash — lighter at top so the photo breathes, deep forest pooling at the bottom */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(180deg, rgba(4,22,13,0.55) 0%, rgba(4,22,13,0.72) 45%, rgba(4,22,13,0.94) 82%, #04160d 100%)',
-          zIndex: 1,
-        }} />
-
-        {/* Film grain for tactile, premium texture */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 1,
-          opacity: 0.05,
-          mixBlendMode: 'overlay',
-          backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-        }} />
-
-        {/* Ambient glow orbs — slow float, adds quiet motion without noise */}
-        <div style={{
-          position: 'absolute',
-          right: -120, top: -100,
-          width: 420, height: 420,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(74,222,128,0.16) 0%, rgba(74,222,128,0) 70%)',
-          filter: 'blur(10px)',
-          zIndex: 1,
-          animation: 'uw-float-a 11s ease-in-out infinite',
-        }} />
-        <div style={{
-          position: 'absolute',
-          left: -80, bottom: -60,
-          width: 320, height: 320,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(212,168,106,0.14) 0%, rgba(212,168,106,0) 70%)',
-          filter: 'blur(10px)',
-          zIndex: 1,
-          animation: 'uw-float-b 13s ease-in-out infinite',
-        }} />
-
-        {/* Hairline ring, faint — collegiate seal echo, not a template circle-decoration */}
-        <div style={{
-          position: 'absolute',
-          right: -70, top: -70,
-          width: 340, height: 340,
-          borderRadius: '50%',
-          border: '1px solid rgba(212,168,106,0.14)',
-          zIndex: 1,
-        }} />
-
-        {/* Content */}
-        <div style={{
-          position: 'relative',
-          zIndex: 2,
-          maxWidth: 980,
-          margin: '0 auto',
-          padding: '64px 24px 0',
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-        }}>
-          <div style={{ maxWidth: 620 }}>
-
-            {/* Eyebrow: gold hairline + mono badge */}
-            <div style={{ marginBottom: 18 }}>
-              <div style={{ width: 34, height: 2, background: '#d4a86a', marginBottom: 12 }} />
-              {user ? (
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 9,
-                  background: 'rgba(74,222,128,0.10)',
-                  border: '1px solid rgba(74,222,128,0.28)',
-                  borderRadius: 999, padding: '6px 16px',
-                }}>
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80', animation: 'uw-pulse 2s ease-out infinite' }} />
-                  <span className="uw-mono" style={{ color: '#86efac', fontSize: 11, fontWeight: 600, textTransform: 'uppercase' }}>
-                    {greeting}, {user.role === 'admin' ? 'Super Admin' : user.role === 'faculty_admin' ? 'Faculty Admin' : user.role === 'department_admin' ? 'Dept Admin' : user.role === 'lecturer' ? 'Lecturer' : `Student · ${user.level}`}
-                  </span>
-                </div>
-              ) : (
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 9,
-                  background: 'rgba(212,168,106,0.10)',
-                  border: '1px solid rgba(212,168,106,0.30)',
-                  borderRadius: 999, padding: '6px 16px',
-                }}>
-                  <span className="uw-mono" style={{ color: '#e6c98a', fontSize: 11, fontWeight: 600, textTransform: 'uppercase' }}>
-                    🎓 Academic Platform
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Main heading — serif, with a gold underline swash on the accent word */}
-            <h1 className="uw-serif" style={{
-              fontSize: 'clamp(34px, 5vw, 56px)',
-              fontWeight: 600,
-              color: 'white',
-              lineHeight: 1.08,
-              marginBottom: 22,
-              letterSpacing: '-0.01em',
-            }}>
-              {user ? (
-                <>Welcome to{' '}
-                  <span style={{ position: 'relative', display: 'inline-block' }}>
-                    <span style={{ color: '#7ee2a8' }}>UniWeb</span>
-                    <svg viewBox="0 0 140 12" style={{ position: 'absolute', left: 0, bottom: -8, width: '100%', height: 10 }} preserveAspectRatio="none">
-                      <path d="M2 8 C 35 2, 105 2, 138 8" stroke="#d4a86a" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-                    </svg>
-                  </span>
-                </>
-              ) : (
-                <>The Smart{' '}
-                  <span style={{ position: 'relative', display: 'inline-block' }}>
-                    <span style={{ color: '#7ee2a8' }}>Academic</span>
-                    <svg viewBox="0 0 220 12" style={{ position: 'absolute', left: 0, bottom: -8, width: '100%', height: 10 }} preserveAspectRatio="none">
-                      <path d="M2 8 C 55 2, 165 2, 218 8" stroke="#d4a86a" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-                    </svg>
-                  </span>{' '}Platform
-                </>
-              )}
-            </h1>
-
-            <p className="uw-body" style={{
-              color: 'rgba(255,255,255,0.72)',
-              fontSize: 17, lineHeight: 1.7, marginBottom: 34, maxWidth: 480,
-            }}>
+            <p className="lead">
               {user
                 ? 'Your all-in-one academic platform to connect, teach, learn, and stay informed.'
                 : 'Connect students, lecturers, and administrators through real-time chat, live classes, and smart announcements.'}
             </p>
 
-            {/* Feature highlights — logged in only */}
             {user && (
-              <div style={{ display: 'flex', gap: 24, marginBottom: 32, flexWrap: 'wrap' }}>
+              <div className="hl">
                 {[
                   { icon: '💬', label: 'Real-time Communication', sub: 'Chat with students & staff' },
                   { icon: '📡', label: 'Live & Interactive Classes', sub: 'Engage anywhere, anytime' },
                   { icon: '📢', label: 'Stay Informed', sub: 'Announcements & updates' },
                 ].map(f => (
-                  <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: 8,
-                      background: 'rgba(74,222,128,0.12)',
-                      border: '1px solid rgba(74,222,128,0.28)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 16, flexShrink: 0,
-                    }}>
-                      {f.icon}
-                    </div>
-                    <div>
-                      <div className="uw-body" style={{ color: 'white', fontSize: 13, fontWeight: 600 }}>{f.label}</div>
-                      <div className="uw-body" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{f.sub}</div>
-                    </div>
+                  <div key={f.label}>
+                    <i>{f.icon}</i>
+                    <span><b>{f.label}</b><small>{f.sub}</small></span>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Quote card — logged in only */}
             {user && (
-              <div style={{
-                background: 'rgba(0,0,0,0.28)',
-                backdropFilter: 'blur(8px)',
-                border: '1px solid rgba(212,168,106,0.22)',
-                borderTop: '2px solid rgba(212,168,106,0.55)',
-                borderRadius: 10, padding: '16px 20px',
-                maxWidth: 360, marginBottom: 30,
-              }}>
-                <p className="uw-serif" style={{ color: 'rgba(255,255,255,0.88)', fontSize: 14, fontStyle: 'italic', lineHeight: 1.6, margin: 0 }}>
-                  "Education is the most powerful weapon which you can use to change the world."
-                </p>
-                <p className="uw-mono" style={{ color: '#d4a86a', fontSize: 11, marginTop: 10, fontWeight: 600 }}>— NELSON MANDELA</p>
+              <div className="quote">
+                <p>"Education is the most powerful weapon which you can use to change the world."</p>
+                <span>— Nelson Mandela</span>
               </div>
             )}
 
-            {/* CTA buttons */}
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 40 }}>
+            <div className="cta-row">
               {user ? (
                 <>
-                  <a href="/dashboard">
-                    <button className="uw-btn-primary uw-body" style={{
-                      background: 'linear-gradient(135deg, #4ade80 0%, #16a34a 100%)',
-                      color: '#052e16',
-                      fontWeight: 700, fontSize: 14,
-                      padding: '13px 28px', borderRadius: 8, border: 'none',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                      boxShadow: '0 6px 18px rgba(34,197,94,0.28)',
-                    }}>
-                      Go to Dashboard →
-                    </button>
-                  </a>
-                  <a href="/live">
-                    <button className="uw-btn-ghost uw-body" style={{
-                      background: 'rgba(255,255,255,0.04)', color: 'white',
-                      fontWeight: 600, fontSize: 14,
-                      padding: '13px 24px', borderRadius: 8,
-                      border: '1px solid rgba(255,255,255,0.3)',
-                      cursor: 'pointer', backdropFilter: 'blur(4px)',
-                    }}>
-                      ▶ Explore UniWeb →
-                    </button>
-                  </a>
+                  <a href="/dashboard"><button className="btn btn-p">Go to Dashboard</button></a>
+                  <a href="/live"><button className="btn btn-g">▶ Explore UniWeb</button></a>
                 </>
               ) : (
                 <>
-                  <a href="/register">
-                    <button className="uw-btn-primary uw-body" style={{
-                      background: 'linear-gradient(135deg, #4ade80 0%, #16a34a 100%)',
-                      color: '#052e16',
-                      fontWeight: 700, fontSize: 14,
-                      padding: '13px 28px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                      boxShadow: '0 6px 18px rgba(34,197,94,0.28)',
-                    }}>
-                      Get Started →
-                    </button>
-                  </a>
-                  <a href="/login">
-                    <button className="uw-btn-ghost uw-body" style={{
-                      background: 'rgba(255,255,255,0.04)', color: 'white',
-                      fontWeight: 600, fontSize: 14,
-                      padding: '13px 24px', borderRadius: 8,
-                      border: '1px solid rgba(255,255,255,0.3)',
-                      cursor: 'pointer', backdropFilter: 'blur(4px)',
-                    }}>
-                      Login
-                    </button>
-                  </a>
+                  <a href="/register"><button className="btn btn-p">Get Started</button></a>
+                  <a href="/login"><button className="btn btn-g">Login</button></a>
                 </>
               )}
             </div>
           </div>
 
-          {/* ===== SIGNATURE ELEMENT: live ticker strip ===== */}
-          <div className="uw-ticker-wrap" style={{
-            marginTop: 'auto',
-            borderTop: '1px solid rgba(255,255,255,0.10)',
-            background: 'rgba(0,0,0,0.22)',
-            backdropFilter: 'blur(6px)',
-            padding: '13px 0',
-            overflow: 'hidden',
-            position: 'relative',
-          }}>
-            <div style={{
-              position: 'absolute', left: 0, top: 0, bottom: 0, width: 60, zIndex: 1,
-              background: 'linear-gradient(90deg, rgba(4,22,13,0.9), rgba(4,22,13,0))',
-            }} />
-            <div style={{
-              position: 'absolute', right: 0, top: 0, bottom: 0, width: 60, zIndex: 1,
-              background: 'linear-gradient(270deg, rgba(4,22,13,0.9), rgba(4,22,13,0))',
-            }} />
-            <div style={{ display: 'flex', width: 'max-content' }} className="uw-ticker-track">
-              {[...tickerItems, ...tickerItems, ...tickerItems].map((item, i) => (
-                <div key={i} className="uw-body" style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  color: 'rgba(255,255,255,0.68)', fontSize: 13,
-                  padding: '0 28px', whiteSpace: 'nowrap',
-                  borderRight: '1px solid rgba(255,255,255,0.10)',
-                }}>
-                  {i % tickerItems.length === 0 && (
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2dd4bf', animation: 'uw-pulse-teal 2s ease-out infinite', flexShrink: 0 }} />
-                  )}
-                  {item}
-                </div>
-              ))}
-            </div>
+          {/* Campus noticeboard: three pinned notes */}
+          <div className="board" aria-hidden="true">
+            <div className="note"><i>💬</i><span><b>Real-time Chat</b><span>Rooms for your department and level.</span></span></div>
+            <div className="note"><i>📡</i><span><b>Live Classes</b><span>Lecturers start live sessions instantly.</span></span></div>
+            <div className="note"><i>📢</i><span><b>Announcements</b><span>Filtered by faculty, department, and level.</span></span></div>
           </div>
         </div>
 
-      </div>
+        {/* Ticker strip */}
+        <div className="ticker">
+          <div className="ticker-track">
+            {[...tickerItems, ...tickerItems, ...tickerItems].map((item, i) => (
+              <div key={i} className="ticker-item">{item}</div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ===== STATS BAR — logged-out position (right after hero) ===== */}
       {!user && <StatsBar />}
@@ -1517,301 +1004,101 @@ export default function Home() {
       {/* ===== WHY UNIWEB — logged out only ===== */}
       {!user && <WhyUniWeb />}
 
-      {/* ===== QUICK ACCESS (logged in only) ===== */}
+      {/* ===== QUICK ACCESS + ANNOUNCEMENTS (logged in only) ===== */}
       {user && (
-        <div style={{ maxWidth: 960, margin: '0 auto', padding: '40px 24px 0' }}>
-
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 20,
-          }}>
-            <h2 className="uw-serif" style={{ fontSize: 19, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, color: '#0e2317' }}>
-              ⚡ Quick Access
-            </h2>
-            <span className="uw-mono" style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase' }}>Shortcuts</span>
-          </div>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: 16,
-            marginBottom: 40,
-          }}>
-            {[
-              {
-                icon: '💬',
-                title: 'Chat',
-                desc: 'Talk to your faculty and students',
-                href: '/chat',
-                color: '#16a34a',
-                bg: '#f0fdf4',
-              },
-              {
-                icon: '📡',
-                title: 'Live Classes',
-                desc: 'Start or join a live session',
-                href: '/live',
-                color: '#2563eb',
-                bg: '#eff6ff',
-              },
-              {
-                icon: '📢',
-                title: 'Announcements',
-                desc: 'Stay updated with latest news',
-                href: '/announcements',
-                color: '#b8862f',
-                bg: '#fbf3e3',
-              },
-              ...(user.role === 'admin' ? [{
-                icon: '⚙️',
-                title: 'Admin Panel',
-                desc: 'Manage the entire platform',
-                href: '/admin',
-                color: '#dc2626',
-                bg: '#fef2f2',
-              }] : []),
-              ...(user.role === 'faculty_admin' ? [{
-                icon: '🛡️',
-                title: 'Faculty Panel',
-                desc: 'Manage your faculty',
-                href: '/faculty-admin',
-                color: '#7c3aed',
-                bg: '#f5f3ff',
-              }] : []),
-            ].map(card => (
-              <Link key={card.href} href={card.href} style={{ textDecoration: 'none' }}>
-                <div className="uw-card" style={{
-                  background: 'white',
-                  borderRadius: 12,
-                  padding: 20,
-                  border: '1px solid #f3f4f6',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 16,
-                }}>
-                  <div style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 12,
-                    background: card.bg,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 22,
-                    flexShrink: 0,
-                  }}>
-                    {card.icon}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="uw-body" style={{ fontWeight: 700, fontSize: 14, color: '#1f2937', marginBottom: 2 }}>
-                      {card.title}
+        <>
+          <section className="sec" style={{ paddingBottom: 40 }}>
+            <div className="wrap">
+              <div className="qa-head">
+                <h2>⚡ Quick Access</h2>
+                <span>Shortcuts</span>
+              </div>
+              <div className="qa">
+                {quickCards.map(card => (
+                  <Link key={card.href} href={card.href}>
+                    <div className="card hov">
+                      <i style={{ background: card.bg }}>{card.icon}</i>
+                      <div>
+                        <b>{card.title}</b>
+                        <small>{card.desc}</small>
+                      </div>
+                      <em>›</em>
                     </div>
-                    <div className="uw-body" style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>
-                      {card.desc}
-                    </div>
-                  </div>
-                  <span style={{ color: '#9ca3af', fontSize: 16 }}>›</span>
-                </div>
-              </Link>
-            ))}
-          </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
 
           {/* ===== STATS BAR — logged-in position (right after Quick Access) ===== */}
           <StatsBar />
 
-          {/* ===== LATEST ANNOUNCEMENTS ===== */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: announcements.length > 0 ? '1fr 1fr' : '1fr',
-            gap: 24,
-            marginBottom: 40,
-            marginTop: 40,
-          }}>
-
-            {/* Announcements */}
-            <div>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 16,
-              }}>
-                <h2 className="uw-serif" style={{ fontSize: 16, fontWeight: 600, color: '#0e2317' }}>📢 Latest Announcements</h2>
-                <Link href="/announcements" style={{ fontSize: 13, color: '#16a34a' }}>
-                  View all →
-                </Link>
-              </div>
-
-              {announcements.length === 0 ? (
-                <div style={{
-                  background: 'white',
-                  borderRadius: 12,
-                  padding: 32,
-                  textAlign: 'center',
-                  border: '1px solid #f3f4f6',
-                }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>📢</div>
-                  <p style={{ color: '#9ca3af', fontSize: 14 }}>No announcements yet</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {announcements.map(ann => (
-                    <div
-                      key={ann._id}
-                      style={{
-                        background: 'white',
-                        borderRadius: 12,
-                        padding: 16,
-                        border: '1px solid #f3f4f6',
-                        boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-                        display: 'flex',
-                        gap: 12,
-                        alignItems: 'flex-start',
-                      }}
-                    >
-                      <div style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 10,
-                        background: '#f0fdf4',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 18,
-                        flexShrink: 0,
-                      }}>
-                        📢
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          marginBottom: 4,
-                        }}>
-                          <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>
-                            General
-                          </span>
-                          <span style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap' }}>
-                            {formatDate(ann.createdAt)}
-                          </span>
+          <section className="sec">
+            <div className="wrap">
+              <div className={`split${announcements.length > 0 ? '' : ' one'}`}>
+                <div>
+                  <div className="split-top">
+                    <h2>📢 Latest Announcements</h2>
+                    <Link href="/announcements">View all</Link>
+                  </div>
+                  {announcements.length === 0 ? (
+                    <div className="card empty"><i>📢</i><p>No announcements yet</p></div>
+                  ) : (
+                    announcements.map(ann => (
+                      <div key={ann._id} className="card ann">
+                        <i>📢</i>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="ann-top">
+                            <b>General</b>
+                            <span>{formatDate(ann.createdAt)}</span>
+                          </div>
+                          <h4>{ann.title}</h4>
+                          <p>{ann.content.length > 80 ? ann.content.slice(0, 80) + '...' : ann.content}</p>
                         </div>
-                        <p style={{ fontWeight: 600, fontSize: 13, color: '#1f2937', marginBottom: 4 }}>
-                          {ann.title}
-                        </p>
-                        <p style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.5 }}>
-                          {ann.content.length > 80 ? ann.content.slice(0, 80) + '...' : ann.content}
-                        </p>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Upcoming Schedule placeholder */}
-            <div>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 16,
-              }}>
-                <h2 className="uw-serif" style={{ fontSize: 16, fontWeight: 600, color: '#0e2317' }}>📅 Upcoming Schedule</h2>
-                <span style={{ fontSize: 13, color: '#9ca3af' }}>View calendar →</span>
-              </div>
-              <div style={{
-                background: 'white',
-                borderRadius: 12,
-                padding: 32,
-                textAlign: 'center',
-                border: '1px solid #f3f4f6',
-                height: 'calc(100% - 40px)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <div style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 12,
-                  background: '#f9fafb',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 28,
-                  marginBottom: 12,
-                }}>
-                  📅
+                <div>
+                  <div className="split-top">
+                    <h2>📅 Upcoming Schedule</h2>
+                    <span style={{ color: '#8a9890', fontWeight: 400 }}>View calendar</span>
+                  </div>
+                  <div className="card empty" style={{ padding: '48px 24px' }}>
+                    <i>📅</i>
+                    <b>No upcoming events</b>
+                    <p>Schedule and events will appear here.</p>
+                  </div>
                 </div>
-                <p style={{ fontWeight: 600, color: '#1f2937', marginBottom: 4 }}>No upcoming events</p>
-                <p style={{ fontSize: 13, color: '#9ca3af' }}>Schedule and events will appear here.</p>
               </div>
             </div>
-
-          </div>
-
-        </div>
+          </section>
+        </>
       )}
 
       {/* ===== FEATURES (logged out only) ===== */}
       {!user && (
-        <div style={{ maxWidth: 980, margin: '0 auto', padding: '72px 24px' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <span className="uw-mono" style={{ fontSize: 11, color: '#b8862f', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-              What's inside
-            </span>
-            <h2 className="uw-serif" style={{ marginTop: 10, marginBottom: 10, fontSize: 32, fontWeight: 600, color: '#0e2317' }}>
-              Everything your campus needs
-            </h2>
-            <p className="uw-body" style={{ color: '#4b5563', fontSize: 16 }}>
-              Built around your faculty, department, and level.
-            </p>
-          </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: 20,
-          }}>
-            {[
-              { icon: '💬', title: 'Real-time Chat', desc: 'Scoped chat rooms for your department and level.', bg: '#f0fdf4', color: '#15803d', video: '/videos/realtime.mp4' },
-              { icon: '📡', title: 'Live Classes', desc: 'Lecturers start live sessions instantly.', bg: '#fbf3e3', color: '#b8862f', video: '/videos/liveclass.mp4' },
-              { icon: '📢', title: 'Announcements', desc: 'Filtered by faculty, department, and level.', bg: '#f0fdf4', color: '#15803d', video: '/videos/annous.mp4'},
-              { icon: '🎥', title: 'Video Streaming', desc: 'WebRTC-powered peer-to-peer video.', bg: '#effcf6', color: '#0d9488', video: '/videos/stream.mp4' },
-              { icon: '🎓', title: 'Academic System', desc: 'Automatic student promotion each year.', bg: '#fbf3e3', color: '#b8862f', video: '/videos/gcu.mp4' },
-              { icon: '👥', title: 'Role-based Access', desc: 'Students, lecturers, and admins each see what they need.', bg: '#effcf6', color: '#0d9488', video: '/videos/rac.mp4' },
-            ].map(f => (
-              <div key={f.title} className="uw-card" style={{
-                padding: 26,
-                background: 'white',
-                borderRadius: 14,
-                border: '1px solid #eef1ee',
-                boxShadow: '0 1px 3px rgba(11,35,23,0.04)',
-                overflow: 'hidden',
-              }}>
-                {f.video ? (
+        <section className="sec" style={{ paddingTop: 24 }}>
+          <div className="wrap">
+            <div className="head c">
+              <div className="rule" />
+              <h2>Everything your campus needs</h2>
+              <p>Built around your faculty, department, and level.</p>
+            </div>
+            <div className="bento">
+              {features.map((f, i) => (
+                <div key={f.title} className={`card hov ${spans[i]}`}>
                   <FeatureVideoThumb src={f.video} icon={f.icon} badgeColor={f.color} />
-                ) : (
-                  <div style={{
-                    width: 46, height: 46, borderRadius: 11,
-                    background: f.bg, color: f.color,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 22, marginBottom: 16,
-                  }}>
-                    {f.icon}
+                  <div className="bento-body">
+                    <h3>{f.title}</h3>
+                    <p>{f.desc}</p>
                   </div>
-                )}
-                <h3 className="uw-serif" style={{ marginBottom: 8, fontSize: 17, fontWeight: 600, color: '#0e2317' }}>{f.title}</h3>
-                <p className="uw-body" style={{ color: '#4b5563', fontSize: 14, lineHeight: 1.6 }}>{f.desc}</p>
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </section>
       )}
 
       {/* ===== CAMPUS SHOWCASE — shown for both logged in and logged out ===== */}
@@ -1822,65 +1109,20 @@ export default function Home() {
 
       {/* ===== BOTTOM CTA (logged out only) ===== */}
       {!user && (
-        <div style={{
-          position: 'relative',
-          background: '#04160d',
-          padding: '64px 24px',
-          textAlign: 'center',
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            position: 'absolute', inset: 0, opacity: 0.06, mixBlendMode: 'overlay',
-            backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-          }} />
-          <div style={{
-            position: 'absolute', left: '50%', top: -140, transform: 'translateX(-50%)',
-            width: 480, height: 480, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(74,222,128,0.14) 0%, rgba(74,222,128,0) 70%)',
-          }} />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ width: 34, height: 2, background: '#d4a86a', margin: '0 auto 18px' }} />
-            <h2 className="uw-serif" style={{ color: 'white', marginBottom: 10, fontSize: 28, fontWeight: 600 }}>
-              Everything your campus needs
-            </h2>
-            <p className="uw-body" style={{ color: 'rgba(255,255,255,0.55)', marginBottom: 28, fontSize: 15 }}>
-              One platform. Unlimited possibilities.
-            </p>
-            <Link href="/register">
-              <button className="uw-btn-primary uw-body" style={{
-                background: 'linear-gradient(135deg, #4ade80 0%, #16a34a 100%)',
-                color: '#052e16',
-                fontWeight: 700,
-                fontSize: 15,
-                padding: '13px 32px',
-                borderRadius: 8,
-                border: 'none',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                boxShadow: '0 6px 18px rgba(34,197,94,0.3)',
-              }}>
-                Explore UniWeb →
-              </button>
-            </Link>
+        <section className="final">
+          <div>
+            <div className="rule" style={{ margin: '0 auto 18px' }} />
+            <h2>Everything your campus needs</h2>
+            <p>One platform. Unlimited possibilities.</p>
+            <Link href="/register"><button className="btn btn-p">Explore UniWeb</button></Link>
           </div>
-        </div>
+        </section>
       )}
 
-
       {/* ===== FOOTER ===== */}
-      <footer className="uw-body" style={{
-        borderTop: '1px solid #e5e7eb',
-        padding: '24px',
-        textAlign: 'center',
-        color: '#9ca3af',
-        fontSize: 13,
-        background: 'white',
-      }}>
+      <footer className="foot">
         © {new Date().getFullYear()} UniWeb — Academic Platform. Built for academic excellence.
       </footer>
-
     </div>
   )
 }
