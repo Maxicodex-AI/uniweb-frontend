@@ -47,6 +47,9 @@ const CSS = `
 .uw button{font-family:inherit;cursor:pointer}
 .uw :focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:6px}
 .uw h1,.uw h2,.uw h3,.uw h4,.uw p{margin:0}
+.uw p{color:inherit}
+.uw h1,.uw h2,.uw h3,.uw h4{color:var(--ink)}
+.uw .hero h1,.uw .stage h2,.uw .stage h3,.uw .final h2{color:#fff}
 .serif{font-family:'Fraunces',Georgia,serif}
 .wrap{max-width:1100px;margin:0 auto;padding:0 24px}
 .sec{padding:72px 0}
@@ -210,39 +213,72 @@ const CSS = `
 .join{text-align:center;margin-top:48px}
 .join p{color:var(--mut);margin-bottom:14px}
 
-/* faculty explorer (dark) */
+/* showcase stage (cinematic, dark) */
+.stage{position:relative;overflow:hidden;color:#fff;padding:80px 0;background:radial-gradient(900px 420px at 85% -10%,rgba(212,168,106,.18),transparent 60%),radial-gradient(800px 500px at 5% 110%,rgba(74,222,128,.14),transparent 60%),linear-gradient(180deg,#0a2a1c,#04160d)}
+.stage .head p{color:rgba(255,255,255,.66)}
+.stage .pill{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.18);color:#d6e4db}
+.stage .pill:hover{border-color:var(--gold)}
+.stage .pill.on{background:var(--gold);border-color:var(--gold);color:#2a1d06}
+.stage .c1{background:rgba(74,222,128,.15);color:#86efac}.stage .c2{background:rgba(96,165,250,.15);color:#93c5fd}.stage .c3{background:rgba(212,168,106,.18);color:#ecd3a1}
+.spot{display:grid;grid-template-columns:1.55fr 1fr;gap:40px;align-items:center}
+.spot-media{position:relative;aspect-ratio:16/9;border-radius:20px;overflow:hidden;background:#0c1f15;cursor:pointer;box-shadow:0 30px 70px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.1)}
+.spot-media img,.spot-media iframe{width:100%;height:100%;object-fit:cover;border:0;display:block;transition:transform .6s}
+.spot-media:hover img{transform:scale(1.04)}
+.spot-ph{width:100%;height:100%;display:grid;place-items:center;font-size:64px;background:linear-gradient(135deg,#16a34a55,#0c1f15)}
+.spot-play{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.5))}
+.spot-play span{width:84px;height:84px;border-radius:50%;background:var(--gold);display:grid;place-items:center;font-size:28px;color:#2a1d06;padding-left:6px;box-shadow:0 0 0 10px rgba(212,168,106,.22);transition:transform .2s,box-shadow .2s}
+.spot-media:hover .spot-play span{transform:scale(1.08);box-shadow:0 0 0 16px rgba(212,168,106,.16)}
+.spot-flag{position:absolute;top:14px;left:14px;background:var(--leaf);color:#fff;border-radius:8px;padding:4px 11px;font-size:13px;font-weight:700}
+.spot-views{position:absolute;bottom:14px;right:14px;background:rgba(0,0,0,.65);color:#fff;border-radius:8px;padding:4px 10px;font-size:13px}
+.spot-info h3{font-family:'Fraunces',Georgia,serif;font-size:clamp(26px,3.2vw,38px);font-weight:600;line-height:1.12;letter-spacing:-.01em;margin:14px 0 12px}
+.spot-info p{color:rgba(255,255,255,.72);font-size:16px;margin-bottom:20px}
+.spot-by{display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.62);font-size:14px;margin-bottom:24px}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--gold);color:#2a1d06;display:grid;place-items:center;font-weight:700;flex-shrink:0}
+.rail-title{font-size:18px;font-weight:700;margin:52px 0 14px;color:#fff}
+.rail{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 2px 18px;scrollbar-width:thin}
+.rail-card{flex:0 0 270px;scroll-snap-align:start;position:relative;aspect-ratio:16/10;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.14);background:#0c1f15;padding:0;color:#fff;text-align:left;transition:transform .2s,border-color .2s}
+.rail-card:hover{transform:translateY(-5px);border-color:var(--gold)}
+.rail-card img{width:100%;height:100%;object-fit:cover;display:block}
+.rail-card::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,rgba(0,0,0,.82))}
+.rail-ph{width:100%;height:100%;display:grid;place-items:center;font-size:36px;background:linear-gradient(135deg,#16a34a44,#0c1f15)}
+.rail-meta{position:absolute;z-index:2;left:14px;right:14px;bottom:12px}
+.rail-meta b{display:block;font-size:15px;line-height:1.25}
+.rail-meta small{color:rgba(255,255,255,.7);font-size:12px}
+.rail-play{position:absolute;z-index:2;top:10px;right:10px;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.92);color:#0e2317;display:grid;place-items:center;font-size:12px;padding-left:2px}
+
+/* faculty explorer (light) */
 .fx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
-.fx-card{text-align:left;color:#fff;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:22px;transition:transform .2s,background .2s,border-color .2s;overflow:hidden}
-.fx-card:hover{transform:translateY(-4px);background:rgba(255,255,255,.1);border-color:var(--c,rgba(255,255,255,.35))}
+.fx-card{text-align:left;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 1px 3px rgba(10,42,28,.05);transition:transform .2s,box-shadow .2s,border-color .2s;overflow:hidden}
+.fx-card:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(10,42,28,.12);border-color:var(--c,var(--leaf))}
 .fx-card i{font-style:normal;font-size:34px;display:block;margin-bottom:12px}
 .fx-card h3{font-size:17px;font-weight:700;margin-bottom:6px;line-height:1.3}
-.fx-card p{font-size:14px;color:#9db0a5;margin-bottom:12px}
-.fx-meta{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#7e9488}
+.fx-card p{font-size:14px;color:var(--mut);margin-bottom:12px}
+.fx-meta{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--mut)}
 .fx-count{background:var(--c,#16a34a);color:#fff;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
-.fx-go{margin-top:14px;font-size:14px;font-weight:600;color:var(--c,#4ade80)}
-.fx-card.dept{padding:0;border-color:color-mix(in srgb,var(--c) 40%,transparent)}
-.fx-thumb{height:90px;position:relative;overflow:hidden;display:grid;place-items:center;font-size:34px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 40%,transparent),color-mix(in srgb,var(--c) 12%,transparent))}
-.fx-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.6}
+.fx-go{margin-top:14px;font-size:14px;font-weight:600;color:var(--c,#15803d)}
+.fx-card.dept{padding:0;border-color:color-mix(in srgb,var(--c) 35%,#fff)}
+.fx-thumb{height:90px;position:relative;overflow:hidden;display:grid;place-items:center;font-size:34px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 26%,#fff),color-mix(in srgb,var(--c) 8%,#fff))}
+.fx-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .fx-thumb .fx-count{position:absolute;top:10px;right:10px}
 .fx-dept-body{padding:14px 16px 16px}
 .fx-dept-body small{display:block;color:var(--c);font-weight:700;font-size:13px;margin-bottom:4px}
 .fx-dept-body h4{font-size:15px;font-weight:700}
-.crumbs{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:28px;color:#6f857a}
-.crumb{background:rgba(255,255,255,.1);border:0;color:#fff;border-radius:8px;padding:7px 14px;font-size:14px}
-.crumb:hover{background:rgba(255,255,255,.2)}
-.fx-title{font-family:'Fraunces',Georgia,serif;font-size:24px;font-weight:600;color:#fff;margin:0 0 18px}
-.fx-sub{font-size:17px;font-weight:700;color:#fff;margin-bottom:14px}
-.fx-sep{height:1px;background:rgba(255,255,255,.12);margin:8px 0 28px}
-.dept-head{display:flex;align-items:center;gap:18px;border-radius:18px;padding:22px 26px;margin-bottom:28px;border:1px solid color-mix(in srgb,var(--c) 40%,transparent);background:linear-gradient(120deg,color-mix(in srgb,var(--c) 22%,transparent),transparent)}
+.crumbs{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:28px;color:#7a8a82}
+.crumb{background:#fff;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 14px;font-size:14px}
+.crumb:hover{border-color:var(--leaf)}
+.fx-title{font-family:'Fraunces',Georgia,serif;font-size:24px;font-weight:600;margin:0 0 18px}
+.fx-sub{font-size:17px;font-weight:700;margin-bottom:14px}
+.fx-sep{height:1px;background:var(--line);margin:8px 0 28px}
+.dept-head{display:flex;align-items:center;gap:18px;border-radius:18px;padding:22px 26px;margin-bottom:28px;border:1px solid color-mix(in srgb,var(--c) 35%,#fff);background:linear-gradient(120deg,color-mix(in srgb,var(--c) 14%,#fff),#fff)}
 .dept-head i{font-style:normal;font-size:42px}
 .dept-head h3{font-family:'Fraunces',Georgia,serif;font-size:24px;font-weight:600}
-.dept-head p{color:#9db0a5;font-size:14px;margin-top:4px}
+.dept-head p{color:var(--mut);font-size:14px;margin-top:4px}
 .dept-head div:last-child{margin-left:auto;text-align:right}
 .dept-head b{display:block;font-size:28px;font-family:'Fraunces',Georgia,serif}
-.dept-head small{color:#7e9488}
-.msg{text-align:center;padding:56px 24px;color:#9db0a5}
+.dept-head small{color:var(--mut)}
+.msg{text-align:center;padding:56px 24px;color:var(--mut)}
 .msg i{font-style:normal;font-size:44px;display:block;margin-bottom:10px}
-.msg h3{color:#fff;font-size:19px;margin-bottom:6px}
+.msg h3{font-size:19px;margin-bottom:6px}
 
 /* final call + footer */
 .final{position:relative;overflow:hidden;background:var(--deep);text-align:center;color:#fff;padding:80px 24px}
@@ -267,6 +303,7 @@ const CSS = `
   .bento .s2{grid-column:auto}
   .sec{padding:56px 0}
   .dept-head{flex-wrap:wrap}
+  .spot{grid-template-columns:1fr;gap:24px}
 }
 @media (prefers-reduced-motion:reduce){
   .uw *,.uw *::before{animation:none!important;transition:none!important}
@@ -395,17 +432,17 @@ function FacultyShowcaseSection() {
   const [playingId, setPlayingId] = useState<string | null>(null)
 
   const LEARNING_TYPE_COLORS: Record<string, string> = {
-    language_linguistics: '#a78bfa',
-    science_medicine: '#22d3ee',
-    arts_performance: '#f472b6',
-    agriculture_environment: '#4ade80',
-    engineering_technology: '#60a5fa',
-    business_economics: '#fbbf24',
-    journalism_media: '#f87171',
-    law_studies: '#818cf8',
-    health_sciences: '#5eead4',
-    education_studies: '#60a5fa',
-    general_studies: '#4ade80',
+    language_linguistics: '#7c3aed',
+    science_medicine: '#0891b2',
+    arts_performance: '#be185d',
+    agriculture_environment: '#16a34a',
+    engineering_technology: '#2563eb',
+    business_economics: '#d97706',
+    journalism_media: '#dc2626',
+    law_studies: '#4338ca',
+    health_sciences: '#1e3a5f',
+    education_studies: '#2563eb',
+    general_studies: '#16a34a',
   }
 
   const LEARNING_TYPE_ICONS: Record<string, string> = {
@@ -470,11 +507,11 @@ function FacultyShowcaseSection() {
 
   if (faculties.length === 0) return null
 
-  const deptColor = (d: any) => LEARNING_TYPE_COLORS[d?.learningType] || '#4ade80'
+  const deptColor = (d: any) => LEARNING_TYPE_COLORS[d?.learningType] || '#16a34a'
   const deptIcon = (d: any) => LEARNING_TYPE_ICONS[d?.learningType] || '📚'
 
   return (
-    <section className="sec sec-dark">
+    <section className="sec">
       <div className="wrap">
         <div className="head c">
           <div className="rule" />
@@ -508,7 +545,7 @@ function FacultyShowcaseSection() {
             <div className="crumbs">
               <button className="crumb" onClick={() => setSelectedFaculty(null)}>← All faculties</button>
               <span>›</span>
-              <b style={{ color: '#fff' }}>{selectedFaculty.name}</b>
+              <b>{selectedFaculty.name}</b>
             </div>
 
             {/* Faculty-level posts */}
@@ -520,8 +557,7 @@ function FacultyShowcaseSection() {
                     <PostCard
                       key={post._id}
                       post={post}
-                      dark
-                      accent="#4ade80"
+                      accent="#16a34a"
                       playing={playingId === post._id}
                       onToggle={() => setPlayingId(playingId === post._id ? null : post._id)}
                     />
@@ -550,7 +586,7 @@ function FacultyShowcaseSection() {
                     </small>
                     <h4>{dept.name}</h4>
                     {dept.description && (
-                      <p style={{ fontSize: 13, color: '#8ea398', marginTop: 4 }}>
+                      <p style={{ fontSize: 13, color: '#6b7a72', marginTop: 4 }}>
                         {dept.description.slice(0, 50)}{dept.description.length > 50 ? '...' : ''}
                       </p>
                     )}
@@ -572,7 +608,7 @@ function FacultyShowcaseSection() {
               <span>›</span>
               <button className="crumb" onClick={() => setSelectedDept(null)}>{selectedFaculty.name}</button>
               <span>›</span>
-              <b style={{ color: '#fff' }}>{selectedDept.name}</b>
+              <b>{selectedDept.name}</b>
             </div>
 
             <div className="dept-head" style={{ ['--c' as any]: deptColor(selectedDept) }}>
@@ -604,7 +640,6 @@ function FacultyShowcaseSection() {
                   <PostCard
                     key={post._id}
                     post={post}
-                    dark
                     accent={deptColor(selectedDept)}
                     playing={playingId === post._id}
                     onToggle={() => setPlayingId(playingId === post._id ? null : post._id)}
@@ -757,12 +792,13 @@ function WhyUniWeb() {
   )
 }
 
-// Campus showcase grid: pulls short video posts from the /api/showcase
-// endpoint and lets visitors filter by faculty/tag and preview inline.
-function ShowcaseSection({ token }: { token: string | null }) {
+// Campus showcase: a cinema-style spotlight player with a "more from campus"
+// rail. Filter by faculty, pick any clip to bring it into the spotlight.
+function ShowcaseSection() {
   const [posts, setPosts] = useState<ShowcasePost[]>([])
   const [activeFilter, setActiveFilter] = useState('all')
-  const [playingId, setPlayingId] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [playing, setPlaying] = useState(false)
   const [faculties, setFaculties] = useState<string[]>([])
 
   useEffect(() => {
@@ -784,11 +820,17 @@ function ShowcaseSection({ token }: { token: string | null }) {
   const filtered = activeFilter === 'all'
     ? posts
     : posts.filter(p => p.faculty === activeFilter || p.tag === activeFilter)
+  const current = filtered.find(p => p._id === activeId) || filtered[0]
+  const rest = filtered.filter(p => p._id !== current?._id)
+
+  const pick = (id: string) => { setActiveId(id); setPlaying(false) }
+  const changeFilter = (f: string) => { setActiveFilter(f); setActiveId(null); setPlaying(false) }
+  const fmt = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
   if (posts.length === 0) return null
 
   return (
-    <section className="sec sec-white">
+    <section className="stage">
       <div className="wrap">
         <div className="head c">
           <div className="rule" />
@@ -799,30 +841,91 @@ function ShowcaseSection({ token }: { token: string | null }) {
         {faculties.length > 0 && (
           <div className="filters">
             {['all', ...faculties].map(f => (
-              <button key={f} className={`pill${activeFilter === f ? ' on' : ''}`} onClick={() => setActiveFilter(f)}>
+              <button key={f} className={`pill${activeFilter === f ? ' on' : ''}`} onClick={() => changeFilter(f)}>
                 {f === 'all' ? '🌍 All' : f}
               </button>
             ))}
           </div>
         )}
 
-        <div className="posts">
-          {filtered.map(post => (
-            <PostCard
-              key={post._id}
-              post={post}
-              scope
-              playing={playingId === post._id}
-              onToggle={() => setPlayingId(playingId === post._id ? null : post._id)}
-            />
-          ))}
-        </div>
+        {current && (
+          <div className="spot">
+            <div className="spot-media" onClick={() => setPlaying(p => !p)}>
+              {playing && current.embedUrl ? (
+                <iframe
+                  src={current.embedUrl}
+                  title={current.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <>
+                  {current.thumbnail ? (
+                    <img
+                      src={current.thumbnail}
+                      alt={current.title}
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                  ) : (
+                    <div className="spot-ph">🎬</div>
+                  )}
+                  <div className="spot-play"><span>▶</span></div>
+                  {current.isPinned && <div className="spot-flag">📌 Featured</div>}
+                  <div className="spot-views">👁 {current.views || 0}</div>
+                </>
+              )}
+            </div>
 
-        {!token && (
-          <div className="join">
-            <p>Want to be part of this community?</p>
-            <a href="/register"><button className="btn btn-p">Join UniWeb today</button></a>
+            <div className="spot-info">
+              <div className="chips">
+                {current.faculty && <span className="chip c1">{current.faculty}</span>}
+                {current.department && <span className="chip c2">{current.department}</span>}
+                {current.tag && <span className="chip c3">#{current.tag}</span>}
+              </div>
+              <h3>{current.title}</h3>
+              {current.description && <p>{current.description}</p>}
+              <div className="spot-by">
+                <span className="avatar">{(current.postedByName || 'U').charAt(0).toUpperCase()}</span>
+                <span>{current.postedByName ? `By ${current.postedByName} • ` : ''}{fmt(current.createdAt)}</span>
+              </div>
+              <div className="cta-row">
+                <button className="btn btn-p" onClick={() => setPlaying(p => !p)}>
+                  {playing ? '⏸ Stop video' : '▶ Play here'}
+                </button>
+                {current.videoUrl && (
+                  <a href={current.videoUrl} target="_blank" rel="noopener noreferrer">
+                    <button className="btn btn-g">Watch on source ↗</button>
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
+        )}
+
+        {rest.length > 0 && (
+          <>
+            <h3 className="rail-title">More from campus</h3>
+            <div className="rail">
+              {rest.map(post => (
+                <button key={post._id} className="rail-card" onClick={() => pick(post._id)} aria-label={`Show ${post.title}`}>
+                  {post.thumbnail ? (
+                    <img
+                      src={post.thumbnail}
+                      alt=""
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                  ) : (
+                    <div className="rail-ph">🎬</div>
+                  )}
+                  <span className="rail-play">▶</span>
+                  <span className="rail-meta">
+                    <b>{post.title}</b>
+                    <small>{post.faculty || ''}{post.tag ? ` #${post.tag}` : ''}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </section>
@@ -916,8 +1019,6 @@ export default function Home() {
     ...(user.role === 'admin' ? [{ icon: '⚙️', title: 'Admin Panel', desc: 'Manage the entire platform', href: '/admin', bg: '#fdecec' }] : []),
     ...(user.role === 'faculty_admin' ? [{ icon: '🛡️', title: 'Faculty Panel', desc: 'Manage your faculty', href: '/faculty-admin', bg: '#f1ecfe' }] : []),
   ] : []
-
-  const token = getAuthToken()
 
   return (
     <div className="uw">
@@ -1102,7 +1203,7 @@ export default function Home() {
       )}
 
       {/* ===== CAMPUS SHOWCASE — shown for both logged in and logged out ===== */}
-      <ShowcaseSection token={token} />
+      <ShowcaseSection />
 
       {/* ===== FACULTY & DEPARTMENT SHOWCASE ===== */}
       <FacultyShowcaseSection />
@@ -1112,9 +1213,9 @@ export default function Home() {
         <section className="final">
           <div>
             <div className="rule" style={{ margin: '0 auto 18px' }} />
-            <h2>Everything your campus needs</h2>
+            <h2>Ready to join UniWeb?</h2>
             <p>One platform. Unlimited possibilities.</p>
-            <Link href="/register"><button className="btn btn-p">Explore UniWeb</button></Link>
+            <Link href="/register"><button className="btn btn-p">Get started</button></Link>
           </div>
         </section>
       )}
