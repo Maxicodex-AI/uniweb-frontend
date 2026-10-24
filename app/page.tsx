@@ -263,6 +263,13 @@ const CSS = `
 .fx-dept-body{padding:14px 16px 16px}
 .fx-dept-body small{display:block;color:var(--c);font-weight:700;font-size:13px;margin-bottom:4px}
 .fx-dept-body h4{font-size:15px;font-weight:700}
+.art{position:relative;height:132px;overflow:hidden}
+.art svg,.art img{position:absolute;inset:0;width:100%;height:100%;transition:transform .5s}
+.art img{object-fit:cover}
+.fx-card:hover .art svg,.fx-card:hover .art img{transform:scale(1.07)}
+.art .fx-count{position:absolute;top:10px;right:10px;z-index:2;background:rgba(0,0,0,.45);backdrop-filter:blur(4px)}
+.fx-card.fac{padding:0}
+.fx-body{padding:16px 20px 20px}
 .crumbs{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:28px;color:#7a8a82}
 .crumb{background:#fff;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 14px;font-size:14px}
 .crumb:hover{border-color:var(--leaf)}
@@ -420,6 +427,196 @@ function PostCard({ post, playing, onToggle, accent = '#16a34a', dark = false, s
   )
 }
 
+// ===== Auto illustrations =====
+// Every faculty and department gets artwork automatically: first from keywords
+// in its name, then from its learning type, then from its departments, and
+// finally a campus building. New faculties/departments need no extra work.
+const SCENE_KEYWORDS: [string, RegExp][] = [
+  ['law', /\blaw|legal|jurisprud/],
+  ['health', /health|medic|nurs|pharm|dent|anatom|physiolog|clinical|laborator/],
+  ['bio', /\bbio|life science|zoolog|botan|genetic|microb/],
+  ['arts', /\bart|fine|music|theat|drama|creative|perform|design|film/],
+  ['tech', /engineer|techn|comput|software|electr|mechan|civil|architect|inform/],
+  ['agric', /agric|crop|soil|animal|forest|fish|environment|food/],
+  ['biz', /business|manage|account|econ|financ|bank|market|entrepren/],
+  ['media', /journal|media|mass comm|broadcast|communic|social|politic|psycholog|sociolog/],
+  ['lang', /language|linguist|english|literat|french|igbo|yoruba|hausa|philosoph|histor/],
+  ['edu', /educat|teach|pedagog|curricul/],
+  ['science', /science|chem|physic|math|statist|geolog|astro/],
+]
+
+const TYPE_SCENE: Record<string, string> = {
+  language_linguistics: 'lang',
+  science_medicine: 'science',
+  arts_performance: 'arts',
+  agriculture_environment: 'agric',
+  engineering_technology: 'tech',
+  business_economics: 'biz',
+  journalism_media: 'media',
+  law_studies: 'law',
+  health_sciences: 'health',
+  education_studies: 'edu',
+  general_studies: 'campus',
+}
+
+const SCENE_COLOR: Record<string, string> = {
+  arts: '#be185d', bio: '#059669', science: '#0891b2', tech: '#2563eb',
+  agric: '#16a34a', health: '#e11d48', law: '#4338ca', edu: '#0284c7',
+  biz: '#d97706', media: '#dc2626', lang: '#9333ea', campus: '#0a2a1c',
+}
+
+const sceneFor = (name?: string, learningType?: string): string | null => {
+  const n = (name || '').toLowerCase()
+  const hit = SCENE_KEYWORDS.find(([, re]) => re.test(n))
+  if (hit) return hit[0]
+  return (learningType && TYPE_SCENE[learningType]) || null
+}
+
+const deptScene = (d: any): string => sceneFor(d?.name, d?.learningType) || 'campus'
+
+const facultyScene = (f: any): string => {
+  const byName = sceneFor(f?.name)
+  if (byName) return byName
+  const counts: Record<string, number> = {}
+  ;(f?.departments || []).forEach((d: any) => {
+    const sc = sceneFor(d?.name, d?.learningType)
+    if (sc) counts[sc] = (counts[sc] || 0) + 1
+  })
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]
+  return top ? top[0] : 'campus'
+}
+
+const grad = (c: string) => `linear-gradient(135deg, ${c}, color-mix(in srgb, ${c} 55%, #000))`
+
+function Scene({ kind, bg }: { kind: string; bg: string }) {
+  const w = '#fff'
+  let art: React.ReactNode
+  switch (kind) {
+    case 'arts':
+      art = (<>
+        <ellipse cx="160" cy="68" rx="62" ry="44" fill={w} fillOpacity=".93" />
+        <circle cx="138" cy="52" r="8" fill="#f472b6" /><circle cx="164" cy="42" r="8" fill="#fbbf24" />
+        <circle cx="190" cy="54" r="8" fill="#60a5fa" /><circle cx="192" cy="82" r="8" fill="#4ade80" />
+        <ellipse cx="132" cy="84" rx="13" ry="10" fill={bg} />
+        <rect x="222" y="22" width="9" height="74" rx="4.5" fill={w} fillOpacity=".6" transform="rotate(32 226 60)" />
+        <path d="M54 96 q10 -34 20 0 q10 34 20 0" stroke={w} strokeOpacity=".5" strokeWidth="4" fill="none" strokeLinecap="round" />
+      </>)
+      break
+    case 'bio':
+      art = (<>
+        <g fill="none" stroke={w} strokeWidth="5" strokeLinecap="round">
+          <path d="M20 65 C60 20 100 20 140 65 S220 110 260 65" />
+          <path d="M20 65 C60 110 100 110 140 65 S220 20 260 65" />
+        </g>
+        <g stroke={w} strokeOpacity=".6" strokeWidth="3" strokeLinecap="round">
+          <path d="M50 40V90M80 31V99M110 40V90M170 40V90M200 31V99M230 40V90" />
+        </g>
+        <circle cx="282" cy="34" r="14" fill={w} fillOpacity=".25" /><circle cx="282" cy="34" r="5" fill={w} />
+      </>)
+      break
+    case 'science':
+      art = (<>
+        <g fill="none" stroke={w} strokeWidth="3" strokeOpacity=".92">
+          <ellipse cx="160" cy="65" rx="64" ry="22" />
+          <ellipse cx="160" cy="65" rx="64" ry="22" transform="rotate(60 160 65)" />
+          <ellipse cx="160" cy="65" rx="64" ry="22" transform="rotate(120 160 65)" />
+        </g>
+        <circle cx="160" cy="65" r="11" fill={w} />
+        <circle cx="224" cy="65" r="5" fill={w} /><circle cx="128" cy="120" r="5" fill={w} /><circle cx="128" cy="10" r="5" fill={w} />
+      </>)
+      break
+    case 'tech':
+      art = (<>
+        <circle cx="130" cy="66" r="36" fill="none" stroke={w} strokeWidth="12" strokeDasharray="12 12.8" />
+        <circle cx="130" cy="66" r="27" fill={w} fillOpacity=".93" /><circle cx="130" cy="66" r="10" fill={bg} />
+        <path d="M178 66H212V36H262" fill="none" stroke={w} strokeOpacity=".75" strokeWidth="4" strokeLinecap="round" />
+        <path d="M178 84H230V104H284" fill="none" stroke={w} strokeOpacity=".75" strokeWidth="4" strokeLinecap="round" />
+        <circle cx="262" cy="36" r="6" fill={w} /><circle cx="284" cy="104" r="6" fill={w} />
+      </>)
+      break
+    case 'agric':
+      art = (<>
+        <circle cx="240" cy="36" r="20" fill="#fde68a" fillOpacity=".92" />
+        <path d="M160 108V56" stroke={w} strokeWidth="6" strokeLinecap="round" />
+        <path d="M160 76C128 76 108 58 108 36C140 36 160 52 160 76Z" fill={w} fillOpacity=".93" />
+        <path d="M160 64C192 64 212 46 212 24C180 24 160 40 160 64Z" fill={w} fillOpacity=".8" />
+        <path d="M88 108H232" stroke={w} strokeOpacity=".55" strokeWidth="5" strokeLinecap="round" />
+      </>)
+      break
+    case 'health':
+      art = (<>
+        <path d="M8 100H80l10-24 14 40 12-56 12 40H312" fill="none" stroke={w} strokeOpacity=".5" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="136" y="24" width="48" height="82" rx="10" fill={w} fillOpacity=".95" />
+        <rect x="118" y="42" width="84" height="46" rx="10" fill={w} fillOpacity=".95" />
+      </>)
+      break
+    case 'law':
+      art = (<>
+        <rect x="156" y="28" width="8" height="76" rx="3" fill={w} />
+        <rect x="130" y="102" width="60" height="8" rx="3" fill={w} />
+        <rect x="82" y="34" width="156" height="6" rx="3" fill={w} />
+        <g fill="none" stroke={w} strokeWidth="2.5" strokeOpacity=".8">
+          <path d="M96 40L72 82H120ZM224 40L200 82H248Z" />
+        </g>
+        <path d="M66 84h60a30 16 0 0 1-60 0z" fill={w} fillOpacity=".93" />
+        <path d="M194 84h60a30 16 0 0 1-60 0z" fill={w} fillOpacity=".93" />
+      </>)
+      break
+    case 'edu':
+      art = (<>
+        <path d="M160 40C130 28 100 30 76 38V96C100 88 130 88 160 100Z" fill={w} fillOpacity=".95" />
+        <path d="M160 40C190 28 220 30 244 38V96C220 88 190 88 160 100Z" fill={w} fillOpacity=".8" />
+        <path d="M160 40V100" stroke={bg} strokeWidth="3" />
+        <g fill="none" stroke={bg} strokeOpacity=".35" strokeWidth="3" strokeLinecap="round">
+          <path d="M94 52C110 48 128 50 146 56M94 66C110 62 128 64 146 70M174 56C192 50 210 48 226 52M174 70C192 64 210 62 226 66" />
+        </g>
+        <circle cx="258" cy="26" r="9" fill="#fde68a" /><circle cx="60" cy="100" r="6" fill={w} fillOpacity=".6" />
+      </>)
+      break
+    case 'biz':
+      art = (<>
+        {[[96, 28], [132, 46], [168, 64], [204, 84]].map(([x, h], i) => (
+          <rect key={i} x={x} y={108 - h} width="26" height={h} rx="4" fill={w} fillOpacity={0.55 + i * 0.13} />
+        ))}
+        <path d="M100 70L144 52L180 38L222 14" fill="none" stroke="#fde68a" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="222" cy="14" r="6" fill="#fde68a" />
+      </>)
+      break
+    case 'media':
+      art = (<>
+        <rect x="146" y="22" width="28" height="54" rx="14" fill={w} />
+        <path d="M132 62a28 28 0 0 0 56 0" fill="none" stroke={w} strokeWidth="5" strokeLinecap="round" />
+        <path d="M160 90V108M140 108H180" stroke={w} strokeWidth="5" strokeLinecap="round" />
+        <g fill="none" stroke={w} strokeOpacity=".6" strokeWidth="4" strokeLinecap="round">
+          <path d="M108 46q-12 16 0 32M94 36q-22 26 0 52M212 46q12 16 0 32M226 36q22 26 0 52" />
+        </g>
+      </>)
+      break
+    case 'lang':
+      art = (<>
+        <path d="M70 26h110a14 14 0 0 1 14 14v30a14 14 0 0 1-14 14h-62l-24 20V84H70a14 14 0 0 1-14-14V40a14 14 0 0 1 14-14z" fill={w} fillOpacity=".95" />
+        <text x="125" y="68" textAnchor="middle" fontSize="30" fontWeight="700" fill={bg} fontFamily="Fraunces, Georgia, serif">Aa</text>
+        <path d="M204 56h50a12 12 0 0 1 12 12v22a12 12 0 0 1-12 12h-6v16l-20-16h-24a12 12 0 0 1-12-12V68a12 12 0 0 1 12-12z" fill={w} fillOpacity=".6" />
+        <circle cx="214" cy="80" r="4" fill={bg} /><circle cx="230" cy="80" r="4" fill={bg} /><circle cx="246" cy="80" r="4" fill={bg} />
+      </>)
+      break
+    default:
+      art = (<>
+        <polygon points="108,54 160,24 212,54" fill={w} fillOpacity=".95" />
+        <rect x="116" y="58" width="88" height="6" rx="2" fill={w} fillOpacity=".95" />
+        {[124, 146, 168, 190].map(x => <rect key={x} x={x} y="68" width="10" height="36" rx="2" fill={w} fillOpacity=".85" />)}
+        <rect x="106" y="104" width="108" height="8" rx="2" fill={w} />
+      </>)
+  }
+  return (
+    <svg viewBox="0 0 320 130" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <circle cx="40" cy="30" r="26" fill={w} fillOpacity=".08" />
+      <circle cx="290" cy="112" r="38" fill={w} fillOpacity=".08" />
+      {art}
+    </svg>
+  )
+}
+
 // Faculty → Department → Posts explorer. Visitors drill down from a grid of
 // faculties to a grid of departments, then to that department's video posts.
 function FacultyShowcaseSection() {
@@ -430,20 +627,6 @@ function FacultyShowcaseSection() {
   const [facultyPosts, setFacultyPosts] = useState<any[]>([])
   const [loadingPosts, setLoadingPosts] = useState(false)
   const [playingId, setPlayingId] = useState<string | null>(null)
-
-  const LEARNING_TYPE_COLORS: Record<string, string> = {
-    language_linguistics: '#7c3aed',
-    science_medicine: '#0891b2',
-    arts_performance: '#be185d',
-    agriculture_environment: '#16a34a',
-    engineering_technology: '#2563eb',
-    business_economics: '#d97706',
-    journalism_media: '#dc2626',
-    law_studies: '#4338ca',
-    health_sciences: '#1e3a5f',
-    education_studies: '#2563eb',
-    general_studies: '#16a34a',
-  }
 
   const LEARNING_TYPE_ICONS: Record<string, string> = {
     language_linguistics: '🗣️',
@@ -507,7 +690,7 @@ function FacultyShowcaseSection() {
 
   if (faculties.length === 0) return null
 
-  const deptColor = (d: any) => LEARNING_TYPE_COLORS[d?.learningType] || '#16a34a'
+  const deptColor = (d: any) => SCENE_COLOR[deptScene(d)]
   const deptIcon = (d: any) => LEARNING_TYPE_ICONS[d?.learningType] || '📚'
 
   return (
@@ -523,17 +706,28 @@ function FacultyShowcaseSection() {
         {!selectedFaculty && (
           <div className="fx-grid">
             {faculties.map(faculty => (
-              <button key={faculty._id} className="fx-card" onClick={() => handleFacultyClick(faculty)}>
-                <i>🏛️</i>
-                <h3>{faculty.name}</h3>
-                {faculty.description && (
-                  <p>{faculty.description.slice(0, 60)}{faculty.description.length > 60 ? '...' : ''}</p>
-                )}
-                <div className="fx-meta">
-                  <span>{faculty.departments?.length} department{faculty.departments?.length !== 1 ? 's' : ''}</span>
+              <button
+                key={faculty._id}
+                className="fx-card fac"
+                style={{ ['--c' as any]: SCENE_COLOR[facultyScene(faculty)] }}
+                onClick={() => handleFacultyClick(faculty)}
+              >
+                <div className="art" style={{ background: grad(SCENE_COLOR[facultyScene(faculty)]) }}>
+                  {faculty.coverImage
+                    ? <img src={faculty.coverImage} alt={faculty.name} />
+                    : <Scene kind={facultyScene(faculty)} bg={SCENE_COLOR[facultyScene(faculty)]} />}
                   {faculty.postCount > 0 && <span className="fx-count">{faculty.postCount} posts</span>}
                 </div>
-                <div className="fx-go">Explore departments</div>
+                <div className="fx-body">
+                  <h3>{faculty.name}</h3>
+                  {faculty.description && (
+                    <p>{faculty.description.slice(0, 60)}{faculty.description.length > 60 ? '...' : ''}</p>
+                  )}
+                  <div className="fx-meta">
+                    <span>{faculty.departments?.length} department{faculty.departments?.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="fx-go">Explore departments</div>
+                </div>
               </button>
             ))}
           </div>
@@ -576,8 +770,10 @@ function FacultyShowcaseSection() {
                   style={{ ['--c' as any]: deptColor(dept) }}
                   onClick={() => loadDeptPosts(selectedFaculty, dept)}
                 >
-                  <div className="fx-thumb">
-                    {dept.latestThumbnail ? <img src={dept.latestThumbnail} alt={dept.name} /> : deptIcon(dept)}
+                  <div className="art" style={{ background: grad(deptColor(dept)) }}>
+                    {dept.coverImage || dept.latestThumbnail
+                      ? <img src={dept.coverImage || dept.latestThumbnail} alt={dept.name} />
+                      : <Scene kind={deptScene(dept)} bg={deptColor(dept)} />}
                     {dept.postCount > 0 && <span className="fx-count">{dept.postCount} posts</span>}
                   </div>
                   <div className="fx-dept-body">
