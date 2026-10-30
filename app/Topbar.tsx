@@ -44,6 +44,13 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
   const { isDark, bgCard, text, border, inputBg } = useTheme()
 
   const publicPages = ['/', '/login', '/register']
+
+  // Driver portal pages draw their own header — never show the student topbar
+  const isDriverPage =
+    pathname === '/driver-login' ||
+    pathname === '/driver' ||
+    pathname.startsWith('/driver/')
+
   const title = pageTitles[pathname] ||
     Object.entries(pageTitles).find(([key]) => pathname.startsWith(key))?.[1] || 'UniWeb'
 
@@ -58,7 +65,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-    // Fetch current user
+  // Fetch current user
   useEffect(() => {
     if (!token) return
     fetch(`${API_BASE}/api/users/me`, {
@@ -128,9 +135,10 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
     results.users?.length > 0
   )
 
-  if (publicPages.includes(pathname)) return null
+  // Must stay below all hooks above (rules of hooks)
+  if (publicPages.includes(pathname) || isDriverPage) return null
 
-    return (
+  return (
     <div className="topbar" style={{
       background: bgCard,
       borderBottom: `1px solid ${border}`,
@@ -151,7 +159,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
 
       {/* Search */}
       <div ref={searchRef} style={{ flex: 1, maxWidth: 480, position: 'relative' }}>
-                <div className="search-bar" style={{
+        <div className="search-bar" style={{
           background: isDark ? '#1e293b' : '#f9fafb',
           border: `1px solid ${border}`,
         }}>
@@ -380,7 +388,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
         >
           📅
         </button>
-                       <button
+        <button
           onClick={() => router.push('/settings')}
           style={{
             width: 36, height: 36, borderRadius: 8,
