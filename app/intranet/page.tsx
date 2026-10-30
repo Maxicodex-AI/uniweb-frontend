@@ -13,7 +13,8 @@ const resources = [
   { icon: '💼', title: 'Career Opportunities', desc: 'Jobs, internships and more', href: '#', color: '#0891b2', bg: '#ecfeff', bgDark: '#083344' },
   { icon: '📚', title: 'Library', desc: 'Access digital library resources', href: '#', color: '#16a34a', bg: '#f0fdf4', bgDark: '#052e16' },
   { icon: '🏥', title: 'Health Services', desc: 'Campus health and wellness', href: '#', color: '#dc2626', bg: '#fef2f2', bgDark: '#450a0a' },
-  { icon: '🚌', title: 'Transport', desc: 'Bus schedules and routes', href: '#', color: '#d97706', bg: '#fffbeb', bgDark: '#451a03' },
+  // UPDATED: Transport now routes to the live tricycle tracking page
+  { icon: '🚌', title: 'Transport', desc: 'Track tricycles live', href: '/intranet/transport', color: '#d97706', bg: '#fffbeb', bgDark: '#451a03' },
 ]
 
 const announcements = [
@@ -291,9 +292,11 @@ export default function IntranetPage() {
               marginBottom: 24,
             }}>
               {resources.map(r => (
-                <a
+                // UPDATED: <a> -> <Link> for client-side navigation (Transport goes to /intranet/transport).
+                // Marketplace still opens the modal via preventDefault.
+                <Link
                   key={r.title}
-                  href={r.title === 'Marketplace' ? undefined : r.href}
+                  href={r.href}
                   onClick={e => {
                     if (r.title === 'Marketplace') {
                       e.preventDefault()
@@ -319,7 +322,7 @@ export default function IntranetPage() {
                       {r.desc}
                     </div>
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
 
