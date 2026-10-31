@@ -5,231 +5,402 @@ import Link from 'next/link'
 import io from 'socket.io-client'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
-
-// UNN campus center coordinates
 const CAMPUS_CENTER = { lat: 6.8699, lng: 7.4082 }
+
+// Estimates. Tune these after testing on campus.
+const ASSUMED_SPEED_MS = (15 * 1000) / 3600 // about 15 km/h
+const ROAD_FACTOR = 1.3 // roads are longer than a straight line
+const STOPPED_BELOW_M = 15 // moved less than this in the window = stopped
+const DIRECTION_DELTA_M = 10 // change in distance needed to call it toward/away
+const HISTORY_MS = 60 * 1000
+const STALE_AFTER_S = 60
+
+type LatLng = { lat: number; lng: number }
+type Pt = LatLng & { t: number }
+type Dir = 'toward' | 'away' | 'passing' | 'stopped' | 'moving' | 'unknown'
+
+function haversine(a: LatLng, b: LatLng) {
+  const R = 6371000
+  const rad = (x: number) => (x * Math.PI) / 180
+  const dLat = rad(b.lat - a.lat)
+  const dLng = rad(b.lng - a.lng)
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s))
+}
+
+const formatDistance = (m: number) =>
+  m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`
+
+const etaMinutes = (m: number) =>
+  Math.max(1, Math.round((m * ROAD_FACTOR) / ASSUMED_SPEED_MS / 60))
+
+const ageText = (sec: number) =>
+  sec < 60 ? `${sec}s ago` : `${Math.floor(sec / 60)} min ago`
+
+// Driver-entered text goes into map markers, so escape it.
+const esc = (s: string) =>
+  String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string)
+  )
+
+function getDirection(points: Pt[] | undefined, user: LatLng | null): Dir {
+  if (!points || points.length < 2) return 'unknown'
+  const first = points[0]
+  const last = points[points.length - 1]
+  if (last.t - first.t < 8000) return 'unknown'
+  if (haversine(first, last) < STOPPED_BELOW_M) return 'stopped'
+  if (!user) return 'moving'
+  const before = haversine(first, user)
+  const after = haversine(last, user)
+  if (after < before - DIRECTION_DELTA_M) return 'toward'
+  if (after > before + DIRECTION_DELTA_M) return 'away'
+  return 'passing'
+}
+
+const DIR_LABEL: Record<Dir, string> = {
+  toward: 'Coming toward you',
+  away: 'Moving away',
+  passing: 'Passing by',
+  stopped: 'Stopped',
+  moving: 'Moving',
+  unknown: 'Locating',
+}
+
+const DIR_COLOR: Record<Dir, string> = {
+  toward: '#4ade80',
+  away: '#f87171',
+  passing: '#fbbf24',
+  stopped: '#94a3b8',
+  moving: '#60a5fa',
+  unknown: '#94a3b8',
+}
+
+const isFull = (d: any) => d.status === 'full' || d.availableSeats <= 0
+const seatColor = (d: any) => (isFull(d) ? '#ef4444' : d.availableSeats === 1 ? '#d97706' : '#16a34a')
+const seatText = (d: any) => (isFull(d) ? 'Full' : `${d.availableSeats} of ${d.totalSeats} seats free`)
+
+function makeIcon(L: any, d: any, active: boolean) {
+  const html = `<div style="position:absolute;transform:translate(-50%,-50%)${active ? ' scale(1.15)' : ''};background:${seatColor(d)};color:#fff;padding:5px 10px;border-radius:999px;font:800 12px Arial,sans-serif;white-space:nowrap;border:${active ? '3px' : '2px'} solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35)">${esc(d.tricycleNumber)} · ${d.availableSeats}/${d.totalSeats}</div>`
+  return L.divIcon({ html, className: '', iconSize: [0, 0] })
+}
 
 export default function TransportPage() {
   const [drivers, setDrivers] = useState<any[]>([])
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const [locationEnabled, setLocationEnabled] = useState(false)
-  const [selectedDriver, setSelectedDriver] = useState<any>(null)
-  const [filter, setFilter] = useState<'all' | 'available'>('all')
-  const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any>(null)
-  const markersRef = useRef<Record<string, any>>({})
-  const socketRef = useRef<any>(null)
+  const [userLocation, setUserLocation] = useState<LatLng | null>(null)
+  const [locError, setLocError] = useState('')
+  const [showList, setShowList] = useState(false)
+  const [tab, setTab] = useState<'available' | 'all'>('available')
+  const [followId, setFollowId] = useState<string | null>(null)
+  const [notice, setNotice] = useState('')
+  const [mapReady, setMapReady] = useState(false)
+  const [now, setNow] = useState(Date.now())
+
+  const containerRef = useRef<HTMLDivElement>(null)
+  const mapObj = useRef<any>(null)
   const leafletRef = useRef<any>(null)
+  const markersRef = useRef<Record<string, any>>({})
+  const lineRef = useRef<any>(null)
+  const userMarkerRef = useRef<any>(null)
+  const historyRef = useRef<Record<string, Pt[]>>({})
+  const driversRef = useRef<any[]>([])
+  const userRef = useRef<LatLng | null>(null)
+  const watchRef = useRef<number | null>(null)
+  const centeredRef = useRef(false)
+  const loadingRef = useRef(false)
 
-  useEffect(() => {
-    // Load active drivers
-    loadDrivers()
+  driversRef.current = drivers
+  userRef.current = userLocation
 
-    // Connect socket for real-time updates
-    socketRef.current = io(API_BASE)
+  const recordPoint = (id: string, lat: number, lng: number) => {
+    const t = Date.now()
+    const list = (historyRef.current[id] || []).filter(p => t - p.t <= HISTORY_MS)
+    list.push({ lat, lng, t })
+    historyRef.current[id] = list.slice(-10)
+  }
 
-    socketRef.current.on('driverLocationUpdate', (data: any) => {
-      setDrivers(prev => {
-        const existing = prev.find(d => d._id === data.driverId)
-        if (existing) {
-          const updated = prev.map(d =>
-            d._id === data.driverId
-              ? { ...d, currentLocation: { lat: data.lat, lng: data.lng }, availableSeats: data.availableSeats, status: data.status }
-              : d
-          )
-          updateMarker(data)
-          return updated
+  const loadDrivers = async () => {
+    if (loadingRef.current) return
+    loadingRef.current = true
+    try {
+      const res = await fetch(`${API_BASE}/api/drivers/active`)
+      if (!res.ok) return
+      const data = await res.json()
+      if (!Array.isArray(data)) return
+      const mapped = data.map((d: any) => {
+        const loc = d.currentLocation
+        if (loc?.lat != null && !historyRef.current[d._id]) {
+          recordPoint(d._id, loc.lat, loc.lng)
         }
-        return prev
+        return {
+          ...d,
+          lastSeen: loc?.updatedAt ? new Date(loc.updatedAt).getTime() : Date.now(),
+        }
       })
-    })
+      setDrivers(mapped)
+    } catch {
+      /* ignore, the next refresh will retry */
+    } finally {
+      loadingRef.current = false
+    }
+  }
 
-    socketRef.current.on('driverOnline', (data: any) => {
-      loadDrivers()
-    })
+  // ===== Live data =====
+  useEffect(() => {
+    loadDrivers()
+    const socket = io(API_BASE)
 
-    socketRef.current.on('driverOffline', (data: any) => {
-      setDrivers(prev => prev.filter(d => d._id !== data.driverId))
-      if (markersRef.current[data.driverId]) {
-        markersRef.current[data.driverId].remove()
-        delete markersRef.current[data.driverId]
+    socket.on('driverLocationUpdate', (data: any) => {
+      recordPoint(data.driverId, data.lat, data.lng)
+      if (!driversRef.current.some(d => d._id === data.driverId)) {
+        loadDrivers()
+        return
       }
+      setDrivers(prev =>
+        prev.map(d =>
+          d._id === data.driverId
+            ? {
+                ...d,
+                currentLocation: { lat: data.lat, lng: data.lng, updatedAt: data.updatedAt },
+                availableSeats: data.availableSeats,
+                status: data.status,
+                lastSeen: Date.now(),
+              }
+            : d
+        )
+      )
     })
 
-    // Load Leaflet map
-    loadMap()
+    socket.on('driverUpdate', (data: any) => {
+      setDrivers(prev =>
+        prev.map(d =>
+          d._id === data.driverId
+            ? { ...d, availableSeats: data.availableSeats, totalSeats: data.totalSeats, status: data.status }
+            : d
+        )
+      )
+    })
+
+    socket.on('driverOnline', () => loadDrivers())
+
+    socket.on('driverOffline', (data: any) => {
+      delete historyRef.current[data.driverId]
+      setDrivers(prev => prev.filter(d => d._id !== data.driverId))
+    })
+
+    const tick = setInterval(() => setNow(Date.now()), 10000)
+    const refresh = setInterval(loadDrivers, 60000)
 
     return () => {
-      if (socketRef.current) socketRef.current.disconnect()
+      socket.disconnect()
+      clearInterval(tick)
+      clearInterval(refresh)
+      if (watchRef.current != null) navigator.geolocation.clearWatch(watchRef.current)
     }
   }, [])
 
-  const loadDrivers = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/drivers/active`)
-      if (res.ok) {
-        const data = await res.json()
-        setDrivers(data)
-      }
-    } catch (err) {}
-  }
-
-  const loadMap = async () => {
-    if (typeof window === 'undefined') return
-
-    // Dynamically load Leaflet
-    const L = await import('leaflet' as any)
-    leafletRef.current = L
-
-    // Fix default marker icons
-    delete (L.Icon.Default.prototype as any)._getIconUrl
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-    })
-
-    if (!mapRef.current || mapInstanceRef.current) return
-
-    const map = L.map(mapRef.current, {
-      center: [CAMPUS_CENTER.lat, CAMPUS_CENTER.lng],
-      zoom: 16,
-      zoomControl: true,
-    })
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19,
-    }).addTo(map)
-
-    mapInstanceRef.current = map
-
-    // Load existing drivers onto map
-    const res = await fetch(`${API_BASE}/api/drivers/active`)
-    if (res.ok) {
-      const activeDrivers = await res.json()
-      activeDrivers.forEach((driver: any) => {
-        if (driver.currentLocation?.lat) {
-          addDriverMarker(driver, L, map)
-        }
+  // ===== Map setup =====
+  useEffect(() => {
+    let cancelled = false
+    let map: any = null
+    ;(async () => {
+      const mod: any = await import('leaflet')
+      const L = mod.default || mod
+      if (cancelled || !containerRef.current) return
+      leafletRef.current = L
+      map = L.map(containerRef.current, {
+        center: [CAMPUS_CENTER.lat, CAMPUS_CENTER.lng],
+        zoom: 16,
       })
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+      }).addTo(map)
+      mapObj.current = map
+      setMapReady(true)
+    })()
+    return () => {
+      cancelled = true
+      if (map) map.remove()
+      mapObj.current = null
+      markersRef.current = {}
+      lineRef.current = null
+      userMarkerRef.current = null
     }
-  }
+  }, [])
 
-  const addDriverMarker = (driver: any, L: any, map: any) => {
-    const color = driver.status === 'full' ? '#ef4444' : driver.availableSeats <= 1 ? '#d97706' : '#16a34a'
-
-    const icon = L.divIcon({
-      html: `
-        <div style="
-          background: ${color};
-          color: white;
-          padding: 6px 10px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 800;
-          white-space: nowrap;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          border: 2px solid white;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        ">
-          🛺 ${driver.tricycleNumber}
-          <span style="background: rgba(255,255,255,0.3); padding: 1px 5px; border-radius: 10px; font-size: 10px;">
-            ${driver.availableSeats}/${driver.totalSeats}
-          </span>
-        </div>
-      `,
-      className: '',
-      iconAnchor: [40, 20],
-    })
-
-    const marker = L.marker([driver.currentLocation.lat, driver.currentLocation.lng], { icon })
-      .addTo(map)
-      .on('click', () => setSelectedDriver(driver))
-
-    markersRef.current[driver._id] = marker
-  }
-
-  const updateMarker = (data: any) => {
-    const L = leafletRef.current
-    const map = mapInstanceRef.current
-    if (!L || !map) return
-
-    if (markersRef.current[data.driverId]) {
-      markersRef.current[data.driverId].setLatLng([data.lat, data.lng])
+  const startFollow = (id: string) => {
+    const d = driversRef.current.find(x => x._id === id)
+    setFollowId(id)
+    setShowList(false)
+    setNotice('')
+    const map = mapObj.current
+    if (!d || !map || d.currentLocation?.lat == null) return
+    const u = userRef.current
+    const target: [number, number] = [d.currentLocation.lat, d.currentLocation.lng]
+    if (u) {
+      map.fitBounds([[u.lat, u.lng], target], { padding: [70, 70], maxZoom: 18 })
     } else {
-      // Find driver and add marker
-      setDrivers(prev => {
-        const driver = prev.find(d => d._id === data.driverId)
-        if (driver) {
-          addDriverMarker({ ...driver, currentLocation: { lat: data.lat, lng: data.lng } }, L, map)
-        }
-        return prev
-      })
+      map.setView(target, 18)
     }
   }
+
+  // ===== Tricycle markers =====
+  useEffect(() => {
+    const L = leafletRef.current
+    const map = mapObj.current
+    if (!mapReady || !L || !map) return
+
+    const seen = new Set<string>()
+    drivers.forEach(d => {
+      if (d.currentLocation?.lat == null) return
+      seen.add(d._id)
+      const latlng: [number, number] = [d.currentLocation.lat, d.currentLocation.lng]
+      const icon = makeIcon(L, d, d._id === followId)
+      const existing = markersRef.current[d._id]
+      if (existing) {
+        existing.setLatLng(latlng)
+        existing.setIcon(icon)
+      } else {
+        markersRef.current[d._id] = L.marker(latlng, { icon })
+          .addTo(map)
+          .on('click', () => startFollow(d._id))
+      }
+      // Keep a followed tricycle in view when there is no line to fit
+      if (d._id === followId && !userRef.current && !map.getBounds().contains(latlng)) {
+        map.panTo(latlng)
+      }
+    })
+
+    Object.keys(markersRef.current).forEach(id => {
+      if (!seen.has(id)) {
+        markersRef.current[id].remove()
+        delete markersRef.current[id]
+      }
+    })
+  }, [drivers, followId, mapReady])
+
+  // ===== My location marker =====
+  useEffect(() => {
+    const L = leafletRef.current
+    const map = mapObj.current
+    if (!mapReady || !L || !map || !userLocation) return
+    const latlng: [number, number] = [userLocation.lat, userLocation.lng]
+    if (userMarkerRef.current) {
+      userMarkerRef.current.setLatLng(latlng)
+    } else {
+      userMarkerRef.current = L.circleMarker(latlng, {
+        radius: 8,
+        color: '#ffffff',
+        weight: 3,
+        fillColor: '#2563eb',
+        fillOpacity: 1,
+      })
+        .addTo(map)
+        .bindTooltip('You')
+    }
+    if (!centeredRef.current) {
+      centeredRef.current = true
+      map.setView(latlng, 17)
+    }
+  }, [userLocation, mapReady])
+
+  // ===== Line from you to the followed tricycle =====
+  useEffect(() => {
+    const L = leafletRef.current
+    const map = mapObj.current
+    if (!mapReady || !L || !map) return
+    const d = drivers.find(x => x._id === followId)
+    if (!d || !userLocation || d.currentLocation?.lat == null) {
+      if (lineRef.current) {
+        lineRef.current.remove()
+        lineRef.current = null
+      }
+      return
+    }
+    const pts: [number, number][] = [
+      [userLocation.lat, userLocation.lng],
+      [d.currentLocation.lat, d.currentLocation.lng],
+    ]
+    if (lineRef.current) lineRef.current.setLatLngs(pts)
+    else lineRef.current = L.polyline(pts, { color: '#3b82f6', weight: 4, dashArray: '8 8' }).addTo(map)
+  }, [drivers, userLocation, followId, mapReady])
+
+  // ===== Followed tricycle went offline =====
+  useEffect(() => {
+    if (followId && !drivers.some(d => d._id === followId)) {
+      setFollowId(null)
+      setNotice('The tricycle you were following is no longer active.')
+    }
+  }, [drivers, followId])
 
   const enableLocation = () => {
-    if (!navigator.geolocation) return
-    navigator.geolocation.getCurrentPosition(pos => {
-      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
-      setUserLocation(loc)
-      setLocationEnabled(true)
-
-      if (mapInstanceRef.current && leafletRef.current) {
-        const L = leafletRef.current
-        const userIcon = L.divIcon({
-          html: `<div style="background: #2563eb; color: white; padding: 6px; border-radius: 50%; font-size: 14px; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📍</div>`,
-          className: '',
-          iconAnchor: [15, 15],
-        })
-        L.marker([loc.lat, loc.lng], { icon: userIcon })
-          .addTo(mapInstanceRef.current)
-          .bindPopup('You are here')
-        mapInstanceRef.current.setView([loc.lat, loc.lng], 17)
-      }
-    })
+    if (!navigator.geolocation) {
+      setLocError('Location is not supported on this device.')
+      return
+    }
+    if (watchRef.current != null) return
+    watchRef.current = navigator.geolocation.watchPosition(
+      pos => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setLocError('')
+      },
+      err => {
+        watchRef.current = null
+        setLocError(
+          err.code === 1
+            ? 'Location permission was denied. Allow it in your browser settings to see distances.'
+            : 'Could not get your location. Try again in an open area.'
+        )
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    )
   }
 
-  const getDistance = (driver: any) => {
-    if (!userLocation || !driver.currentLocation?.lat) return null
-    const R = 6371000
-    const dLat = (driver.currentLocation.lat - userLocation.lat) * Math.PI / 180
-    const dLng = (driver.currentLocation.lng - userLocation.lng) * Math.PI / 180
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLocation.lat * Math.PI / 180) * Math.cos(driver.currentLocation.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2
-    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    if (dist < 1000) return `${Math.round(dist)}m`
-    return `${(dist / 1000).toFixed(1)}km`
+  const describe = (d: any) => {
+    const loc = d.currentLocation
+    const dist = userLocation && loc?.lat != null ? haversine(userLocation, loc) : null
+    const dir = getDirection(historyRef.current[d._id], userLocation)
+    const ageSec = d.lastSeen ? Math.max(0, Math.round((now - d.lastSeen) / 1000)) : null
+    return { dist, dir, ageSec }
   }
 
-  const filteredDrivers = filter === 'available'
-    ? drivers.filter(d => d.status !== 'full')
-    : drivers
+  const rows = drivers
+    .filter(d => d.currentLocation?.lat != null)
+    .map(d => ({ d, ...describe(d) }))
+    .filter(r => tab === 'all' || !isFull(r.d))
+    .sort((a, b) =>
+      a.dist != null && b.dist != null ? a.dist - b.dist : b.d.availableSeats - a.d.availableSeats
+    )
+
+  const availableCount = drivers.filter(d => !isFull(d)).length
+  const followed = drivers.find(d => d._id === followId) || null
+  const followedInfo = followed ? describe(followed) : null
+
+  const pill = (color: string): React.CSSProperties => ({
+    background: color + '22',
+    color,
+    padding: '2px 8px',
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: 700,
+  })
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0f172a' }}>
-
-      {/* Leaflet CSS */}
-      <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
-      />
+    <div style={{ height: 'calc(100vh - 60px)', display: 'flex', flexDirection: 'column', background: '#0f172a' }}>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 
       {/* Header */}
       <div style={{
-        background: '#1e293b', padding: '14px 20px',
-        display: 'flex', alignItems: 'center', gap: 14,
-        borderBottom: '1px solid #334155', flexShrink: 0,
+        background: '#1e293b', padding: '12px 16px', display: 'flex',
+        alignItems: 'center', gap: 14, borderBottom: '1px solid #334155', flexShrink: 0,
       }}>
         <Link href="/intranet" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 13 }}>
           ← Intranet
         </Link>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: 16, fontWeight: 800, color: 'white', margin: 0 }}>
-            🛺 Campus Transport
-          </h1>
+          <h1 style={{ fontSize: 16, fontWeight: 800, color: 'white', margin: 0 }}>Campus Transport</h1>
           <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>
             {drivers.length} tricycle{drivers.length !== 1 ? 's' : ''} active now
           </p>
@@ -237,186 +408,215 @@ export default function TransportPage() {
         <button
           onClick={enableLocation}
           style={{
-            background: locationEnabled ? '#16a34a' : '#334155',
-            border: 'none', borderRadius: 8, padding: '8px 12px',
-            color: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 600,
+            background: userLocation ? '#16a34a' : '#334155', border: 'none', borderRadius: 8,
+            padding: '8px 14px', color: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 600,
           }}
         >
-          {locationEnabled ? '📍 Located' : '📍 My Location'}
+          {userLocation ? 'Location on' : 'My Location'}
         </button>
       </div>
 
-      {/* Map */}
-      <div ref={mapRef} style={{ flex: 1, position: 'relative', zIndex: 0 }} />
+      {/* Map + overlays */}
+      <div style={{ flex: 1, position: 'relative' }}>
+        <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
 
-      {/* Bottom panel */}
-      <div style={{
-        background: '#1e293b',
-        borderTop: '1px solid #334155',
-        maxHeight: '40%',
-        overflowY: 'auto',
-        flexShrink: 0,
-      }}>
-
-        {/* Filter tabs */}
-        <div style={{ display: 'flex', padding: '10px 16px', gap: 8, borderBottom: '1px solid #334155' }}>
-          {[
-            { key: 'all', label: `All (${drivers.length})` },
-            { key: 'available', label: `Available (${drivers.filter(d => d.status !== 'full').length})` },
-          ].map(tab => (
+        {(locError || notice) && (
+          <div style={{
+            position: 'absolute', top: 12, left: 12, right: 12, zIndex: 1000, maxWidth: 480,
+            margin: '0 auto', background: '#7c2d12', color: '#ffedd5', borderRadius: 10,
+            padding: '10px 14px', fontSize: 13, display: 'flex', gap: 10, alignItems: 'center',
+          }}>
+            <span style={{ flex: 1 }}>{locError || notice}</span>
             <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key as any)}
-              style={{
-                padding: '6px 14px', borderRadius: 8, border: 'none',
-                background: filter === tab.key ? '#16a34a' : '#334155',
-                color: filter === tab.key ? 'white' : '#94a3b8',
-                cursor: 'pointer', fontSize: 12, fontWeight: 600,
-              }}
+              onClick={() => { setLocError(''); setNotice('') }}
+              style={{ background: 'none', border: 'none', color: '#ffedd5', cursor: 'pointer', fontSize: 18 }}
             >
-              {tab.label}
+              ×
             </button>
-          ))}
+          </div>
+        )}
+
+        {/* Open-list button */}
+        {!showList && !followed && (
           <button
-            onClick={loadDrivers}
+            onClick={() => setShowList(true)}
             style={{
-              marginLeft: 'auto', padding: '6px 12px', borderRadius: 8, border: 'none',
-              background: '#334155', color: '#94a3b8', cursor: 'pointer', fontSize: 12,
+              position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)',
+              zIndex: 1000, background: '#16a34a', color: 'white', border: 'none',
+              borderRadius: 999, padding: '14px 26px', fontWeight: 800, fontSize: 15,
+              cursor: 'pointer', boxShadow: '0 8px 24px rgba(0,0,0,0.4)', whiteSpace: 'nowrap',
             }}
           >
-            🔄 Refresh
+            View available tricycles ({availableCount})
           </button>
-        </div>
+        )}
 
-        {filteredDrivers.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '32px', color: '#64748b' }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>🛺</div>
-            <p style={{ fontSize: 14, marginBottom: 4 }}>
-              {filter === 'available' ? 'No available tricycles right now' : 'No active tricycles right now'}
-            </p>
-            <p style={{ fontSize: 12 }}>Check back soon or refresh</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {filteredDrivers.map(driver => {
-              const distance = getDistance(driver)
-              const statusColor = driver.status === 'full' ? '#ef4444' : driver.availableSeats <= 1 ? '#d97706' : '#16a34a'
-              const isSelected = selectedDriver?._id === driver._id
-
-              return (
-                <div
-                  key={driver._id}
-                  onClick={() => {
-                    setSelectedDriver(driver)
-                    if (driver.currentLocation?.lat && mapInstanceRef.current) {
-                      mapInstanceRef.current.setView([driver.currentLocation.lat, driver.currentLocation.lng], 18)
-                    }
-                  }}
+        {/* List sheet */}
+        {showList && (
+          <div style={{
+            position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 1000,
+            maxWidth: 560, margin: '0 auto', maxHeight: '62%', display: 'flex',
+            flexDirection: 'column', background: '#1e293b', borderTopLeftRadius: 16,
+            borderTopRightRadius: 16, boxShadow: '0 -8px 32px rgba(0,0,0,0.4)',
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px',
+              borderBottom: '1px solid #334155',
+            }}>
+              {([
+                ['available', `Available (${availableCount})`],
+                ['all', `All (${drivers.length})`],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
                   style={{
-                    padding: '14px 16px',
-                    borderBottom: '1px solid #334155',
-                    background: isSelected ? '#1e3a5f' : 'transparent',
-                    cursor: 'pointer', transition: 'background 0.15s',
-                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '6px 14px', borderRadius: 8, border: 'none',
+                    background: tab === key ? '#16a34a' : '#334155',
+                    color: tab === key ? 'white' : '#94a3b8',
+                    cursor: 'pointer', fontSize: 12, fontWeight: 600,
                   }}
                 >
-                  {/* Tricycle icon */}
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 10,
-                    background: statusColor + '20',
-                    border: `2px solid ${statusColor}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 22, flexShrink: 0,
-                  }}>
-                    🛺
-                  </div>
+                  {label}
+                </button>
+              ))}
+              <button
+                onClick={() => setShowList(false)}
+                style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 22 }}
+              >
+                ×
+              </button>
+            </div>
 
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: 'white' }}>
-                        {driver.tricycleNumber}
-                      </span>
-                      <span style={{
-                        background: statusColor + '20', color: statusColor,
-                        padding: '1px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700,
-                      }}>
-                        {driver.status === 'full' ? 'FULL' : 'AVAILABLE'}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 12, color: '#94a3b8' }}>
-                      Driver: {driver.name}
-                      {distance && <span style={{ marginLeft: 8, color: '#4ade80' }}>• {distance} away</span>}
-                    </div>
-                  </div>
+            {!userLocation && (
+              <div style={{
+                padding: '10px 16px', background: '#0f172a', color: '#94a3b8', fontSize: 12,
+                display: 'flex', alignItems: 'center', gap: 10,
+              }}>
+                <span style={{ flex: 1 }}>Turn on your location to sort by distance and see which way each tricycle is moving.</span>
+                <button
+                  onClick={enableLocation}
+                  style={{ background: '#2563eb', border: 'none', borderRadius: 6, color: 'white', padding: '6px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Turn on
+                </button>
+              </div>
+            )}
 
-                  {/* Seats */}
-                  <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: statusColor }}>
-                      {driver.availableSeats}
-                    </div>
-                    <div style={{ fontSize: 10, color: '#64748b' }}>
-                      seats free
-                    </div>
-                  </div>
-
-                  {/* Seat dots */}
-                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                    {Array.from({ length: driver.totalSeats }).map((_, i) => (
-                      <div key={i} style={{
-                        width: 10, height: 10, borderRadius: '50%',
-                        background: i < driver.availableSeats ? statusColor : '#374151',
-                        transition: 'background 0.2s',
+            <div style={{ overflowY: 'auto' }}>
+              {rows.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '32px 16px', color: '#64748b', fontSize: 14 }}>
+                  {tab === 'available'
+                    ? 'No tricycles with free seats right now.'
+                    : 'No tricycles are active right now.'}
+                </div>
+              ) : (
+                rows.map(({ d, dist, dir, ageSec }) => {
+                  const stale = ageSec != null && ageSec > STALE_AFTER_S
+                  return (
+                    <div
+                      key={d._id}
+                      onClick={() => startFollow(d._id)}
+                      style={{
+                        padding: '14px 16px', borderBottom: '1px solid #334155', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 14, opacity: stale ? 0.6 : 1,
+                      }}
+                    >
+                      <div style={{
+                        width: 6, alignSelf: 'stretch', borderRadius: 3, background: seatColor(d), flexShrink: 0,
                       }} />
-                    ))}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 15, fontWeight: 800, color: 'white' }}>{d.tricycleNumber}</span>
+                          <span style={pill(seatColor(d))}>{seatText(d)}</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: '#94a3b8', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                          {dist != null && <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{formatDistance(dist)} away</span>}
+                          <span style={{ color: DIR_COLOR[dir], fontWeight: 600 }}>{DIR_LABEL[dir]}</span>
+                          {stale && ageSec != null && <span style={{ color: '#fbbf24' }}>Last seen {ageText(ageSec)}</span>}
+                        </div>
+                      </div>
+                      <span style={{ color: '#64748b', fontSize: 20 }}>›</span>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Following card */}
+        {followed && followedInfo && (
+          <div style={{
+            position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 1000, maxWidth: 560,
+            margin: '0 auto', background: '#1e293b', borderTopLeftRadius: 16, borderTopRightRadius: 16,
+            padding: '16px 18px', boxShadow: '0 -8px 32px rgba(0,0,0,0.4)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, marginBottom: 2 }}>FOLLOWING</div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: 'white' }}>{followed.tricycleNumber}</div>
+                <div style={{ fontSize: 12, color: '#94a3b8' }}>Driver: {followed.name}</div>
+              </div>
+              <span style={pill(seatColor(followed))}>{seatText(followed)}</span>
+            </div>
+
+            {followedInfo.dist != null ? (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                <div style={{ background: '#0f172a', borderRadius: 10, padding: 12, textAlign: 'center' }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'white' }}>{formatDistance(followedInfo.dist)}</div>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>straight-line distance</div>
+                </div>
+                <div style={{ background: '#0f172a', borderRadius: 10, padding: 12, textAlign: 'center' }}>
+                  {followedInfo.dir === 'away' ? (
+                    <div style={{ fontSize: 15, fontWeight: 800, color: '#f87171' }}>Moving away</div>
+                  ) : (
+                    <div style={{ fontSize: 20, fontWeight: 900, color: 'white' }}>~{etaMinutes(followedInfo.dist)} min</div>
+                  )}
+                  <div style={{ fontSize: 11, color: '#64748b' }}>
+                    {followedInfo.dir === 'away' ? 'no ETA while it leaves' : 'rough estimate'}
                   </div>
                 </div>
-              )
-            })}
+              </div>
+            ) : (
+              <div style={{
+                background: '#0f172a', borderRadius: 10, padding: '10px 12px', marginBottom: 12,
+                fontSize: 12, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 10,
+              }}>
+                <span style={{ flex: 1 }}>Turn on your location to see the distance and a line to this tricycle.</span>
+                <button
+                  onClick={enableLocation}
+                  style={{ background: '#2563eb', border: 'none', borderRadius: 6, color: 'white', padding: '6px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Turn on
+                </button>
+              </div>
+            )}
+
+            <div style={{ fontSize: 12, marginBottom: 12, display: 'flex', gap: 12 }}>
+              <span style={{ color: DIR_COLOR[followedInfo.dir], fontWeight: 700 }}>{DIR_LABEL[followedInfo.dir]}</span>
+              {followedInfo.ageSec != null && followedInfo.ageSec > STALE_AFTER_S && (
+                <span style={{ color: '#fbbf24' }}>Last seen {ageText(followedInfo.ageSec)}</span>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => { setFollowId(null); setShowList(true) }}
+                style={{ flex: 1, padding: 12, borderRadius: 10, border: 'none', background: '#334155', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+              >
+                Back to list
+              </button>
+              <button
+                onClick={() => setFollowId(null)}
+                style={{ flex: 1, padding: 12, borderRadius: 10, border: 'none', background: '#7f1d1d', color: '#fecaca', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+              >
+                Stop following
+              </button>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Selected driver detail */}
-      {selectedDriver && (
-        <div style={{
-          position: 'absolute', bottom: '42%', left: '50%',
-          transform: 'translateX(-50%)',
-          background: '#1e293b', borderRadius: 16, padding: '16px 20px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-          border: '1px solid #334155', zIndex: 1000,
-          minWidth: 280, maxWidth: 360,
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: 'white' }}>{selectedDriver.tricycleNumber}</div>
-              <div style={{ fontSize: 13, color: '#94a3b8' }}>Driver: {selectedDriver.name}</div>
-            </div>
-            <button onClick={() => setSelectedDriver(null)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 20 }}>×</button>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <div style={{ background: '#0f172a', borderRadius: 8, padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: selectedDriver.status === 'full' ? '#ef4444' : '#4ade80' }}>
-                {selectedDriver.availableSeats}
-              </div>
-              <div style={{ fontSize: 11, color: '#64748b' }}>seats available</div>
-            </div>
-            <div style={{ background: '#0f172a', borderRadius: 8, padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: selectedDriver.status === 'full' ? '#ef4444' : '#4ade80' }}>
-                {selectedDriver.status === 'full' ? '🔴 FULL' : '🟢 AVAILABLE'}
-              </div>
-              <div style={{ fontSize: 11, color: '#64748b' }}>current status</div>
-            </div>
-          </div>
-
-          {selectedDriver.currentLocation?.lat && (
-            <div style={{ marginTop: 10, fontSize: 11, color: '#64748b', textAlign: 'center' }}>
-              📍 Location updated live
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }
