@@ -101,6 +101,9 @@ const CSS = `
 .tp-root .tp-me b{background:rgba(37,99,235,.5);animation:tp-pulse 2s ease-out infinite}
 .tp-root .tp-me i{background:#2563eb;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.4)}
 
+/* Dark map: darken the standard tiles */
+.tp-root .tp-tiles-dark{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.75)}
+
 /* Map controls to match the dark UI */
 .tp-root .leaflet-bar a{background:#1e293b;color:#e2e8f0;border-bottom-color:#334155}
 .tp-root .leaflet-bar a:hover{background:#334155}
@@ -436,15 +439,15 @@ export default function TransportPage() {
     const map = mapObj.current
     if (!mapReady || !L || !map) return
     if (tileRef.current) tileRef.current.remove()
-    const style = isDark ? 'dark_all' : 'light_all'
-    tileRef.current = L.tileLayer(
-      `https://{s}.basemaps.cartocdn.com/${style}/{z}/{x}/{y}{r}.png`,
-      {
-        attribution: '© OpenStreetMap contributors © CARTO',
-        subdomains: 'abcd',
-        maxZoom: 20,
-      }
-    ).addTo(map)
+    // OpenStreetMap tiles need no API key. Dark mode darkens the same tiles
+    // with a CSS filter (see .tp-tiles-dark) instead of loading a second set.
+    // If traffic grows, swap this URL for a keyed provider (MapTiler, Stadia,
+    // Thunderforest) — it is the only line that needs to change.
+    tileRef.current = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+      className: isDark ? 'tp-tiles-dark' : '',
+    }).addTo(map)
     tileRef.current.bringToBack()
   }, [isDark, mapReady])
 
