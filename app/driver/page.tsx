@@ -20,6 +20,14 @@ export default function DriverPortal() {
   const socketRef = useRef<any>(null)
   const watchIdRef = useRef<number | null>(null)
   const tokenRef = useRef<string>('')
+  const driverIdRef = useRef<string>('')
+  const availableSeatsRef = useRef<number>(3)
+  const lastPosRef = useRef<{ lat: number; lng: number } | null>(null)
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Keep current values where the GPS callback can read them
+  driverIdRef.current = driver?._id || ''
+  availableSeatsRef.current = availableSeats
 
   useEffect(() => {
     const token = localStorage.getItem('driver_token')
@@ -52,19 +60,43 @@ export default function DriverPortal() {
       .catch(() => {})
       .finally(() => setLoading(false))
 
-    // Connect socket
-    socketRef.current = io(API_BASE)
+    // Connect socket — the server requires the driver token in the handshake
+    socketRef.current = io(API_BASE, { auth: { token } })
+    socketRef.current.on('connect_error', (err: Error) => {
+      if (err.message?.includes('Authentication')) {
+        setLocationError('Session expired. Please log out and sign in again.')
+      }
+    })
+
     return () => {
       if (socketRef.current) socketRef.current.disconnect()
-      if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current)
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current)
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current)
     }
   }, [])
+
+  const sendLocation = (lat: number, lng: number) => {
+    const seats = availableSeatsRef.current
+    if (!socketRef.current || !driverIdRef.current) return
+    socketRef.current.emit('driverLocation', {
+      driverId: driverIdRef.current,
+      lat,
+      lng,
+      availableSeats: seats,
+      status: seats === 0 ? 'full' : 'active',
+      token: tokenRef.current,
+    })
+  }
 
   const startLocationTracking = () => {
     if (!navigator.geolocation) {
       setLocationError('GPS not supported on this device')
       return
     }
+
+    // Never run two watches at once
+    if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current)
+    if (heartbeatRef.current) clearInterval(heartbeatRef.current)
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
@@ -73,38 +105,37 @@ export default function DriverPortal() {
         setLocationError('')
         setLastUpdate(new Date())
         setAccuracy(Math.round(acc))
-
-        // Send location via socket
-        if (socketRef.current && isOnShift) {
-          socketRef.current.emit('driverLocation', {
-            driverId: driver?._id,
-            lat: latitude,
-            lng: longitude,
-            availableSeats,
-            status: availableSeats === 0 ? 'full' : 'active',
-            token: tokenRef.current,
-          })
-        }
+        lastPosRef.current = { lat: latitude, lng: longitude }
+        sendLocation(latitude, longitude)
       },
       (err) => {
+        // A timeout is not fatal for a watch; the next fix will arrive
+        if (err.code === 3) return
         setLocationEnabled(false)
         if (err.code === 1) setLocationError('Location permission denied. Please enable GPS.')
         else if (err.code === 2) setLocationError('GPS signal not found. Move to open area.')
         else setLocationError('GPS error. Try again.')
       },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 10000,
-      }
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     )
+
+    // A phone that is not moving may send no GPS updates, so repeat the last position
+    heartbeatRef.current = setInterval(() => {
+      const p = lastPosRef.current
+      if (p) sendLocation(p.lat, p.lng)
+    }, 20000)
   }
 
   const stopLocationTracking = () => {
-    if (watchIdRef.current) {
+    if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current)
       watchIdRef.current = null
     }
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current)
+      heartbeatRef.current = null
+    }
+    lastPosRef.current = null
     setLocationEnabled(false)
   }
 
@@ -116,6 +147,8 @@ export default function DriverPortal() {
       })
       if (res.ok) {
         const data = await res.json()
+        driverIdRef.current = data._id
+        availableSeatsRef.current = data.totalSeats
         setIsOnShift(true)
         setStatus('active')
         setAvailableSeats(data.totalSeats)
@@ -149,6 +182,7 @@ export default function DriverPortal() {
 
   const updateSeats = async (newSeats: number) => {
     const clamped = Math.max(0, Math.min(driver?.totalSeats || 3, newSeats))
+    availableSeatsRef.current = clamped
     setAvailableSeats(clamped)
     const newStatus = clamped === 0 ? 'full' : 'active'
     setStatus(newStatus)
@@ -378,7 +412,7 @@ export default function DriverPortal() {
                 background: 'rgba(74,222,128,0.1)', color: '#4ade80',
                 textAlign: 'center', fontSize: 13, fontWeight: 600, marginBottom: 10,
               }}>
-                📍 GPS Active — Students can see you
+                📍 GPS active — your tricycle is live on the campus map
               </div>
             )}
 

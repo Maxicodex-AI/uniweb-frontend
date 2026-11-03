@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import io from 'socket.io-client'
+import { getAuthToken } from '../../utils/auth'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 const CAMPUS_CENTER = { lat: 6.8699, lng: 7.4082 }
@@ -149,7 +150,7 @@ export default function TransportPage() {
   // ===== Live data =====
   useEffect(() => {
     loadDrivers()
-    const socket = io(API_BASE)
+    const socket = io(API_BASE, { auth: { token: getAuthToken() } })
 
     socket.on('driverLocationUpdate', (data: any) => {
       recordPoint(data.driverId, data.lat, data.lng)
