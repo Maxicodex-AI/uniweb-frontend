@@ -49,7 +49,9 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
   const isDriverPage =
     pathname === '/driver-login' ||
     pathname === '/driver' ||
-    pathname.startsWith('/driver/')
+    pathname.startsWith('/driver/') ||
+    pathname === '/fleet' ||
+    pathname.startsWith('/fleet/')
 
   const title = pageTitles[pathname] ||
     Object.entries(pageTitles).find(([key]) => pathname.startsWith(key))?.[1] || 'UniWeb'

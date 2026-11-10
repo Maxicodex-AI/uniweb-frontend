@@ -1,105 +1,107 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import io from 'socket.io-client'
+import { DRIVER_CSS } from './driverStyles'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
-export default function DriverPortal() {
-  const router = useRouter()
+type ApiResult = { ok: boolean; status: number; data: any }
+
+function clearSession() {
+  localStorage.removeItem('driver_token')
+  localStorage.removeItem('driver_data')
+}
+
+const fmtDateTime = (d?: string | Date | null) =>
+  d
+    ? new Date(d).toLocaleString('en-GB', {
+        timeZone: 'Africa/Lagos', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+      })
+    : ''
+
+export default function DriverApp() {
+  const [phase, setPhase] = useState<'loading' | 'ready'>('loading')
   const [driver, setDriver] = useState<any>(null)
+  const [today, setToday] = useState<any>(null) // /today: tricycles still free
+  const [announcements, setAnnouncements] = useState<any[]>([])
+  const [inboxOpen, setInboxOpen] = useState(false)
+
   const [isOnShift, setIsOnShift] = useState(false)
   const [availableSeats, setAvailableSeats] = useState(3)
-  const [status, setStatus] = useState<'offline' | 'active' | 'full'>('offline')
   const [locationEnabled, setLocationEnabled] = useState(false)
   const [locationError, setLocationError] = useState('')
-  const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [accuracy, setAccuracy] = useState<number | null>(null)
+
+  const [picked, setPicked] = useState('')
+  const [agree, setAgree] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+
+  const tokenRef = useRef('')
   const socketRef = useRef<any>(null)
   const watchIdRef = useRef<number | null>(null)
-  const tokenRef = useRef<string>('')
-  const driverIdRef = useRef<string>('')
-  const availableSeatsRef = useRef<number>(3)
-  const lastPosRef = useRef<{ lat: number; lng: number } | null>(null)
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lastPosRef = useRef<{ lat: number; lng: number } | null>(null)
+  const availableSeatsRef = useRef(3)
+  const wakeLockRef = useRef<any>(null)
 
-  // Keep current values where the GPS callback can read them
-  driverIdRef.current = driver?._id || ''
-  availableSeatsRef.current = availableSeats
-
-  useEffect(() => {
-    const token = localStorage.getItem('driver_token')
-    const driverData = localStorage.getItem('driver_data')
-
-    if (!token || !driverData) {
-      router.push('/driver-login')
-      return
-    }
-
-    tokenRef.current = token
-    const parsed = JSON.parse(driverData)
-    setDriver(parsed)
-    setAvailableSeats(parsed.availableSeats || parsed.totalSeats || 3)
-    setIsOnShift(parsed.isOnShift || false)
-    setStatus(parsed.status || 'offline')
-
-    // Fetch fresh data
-    fetch(`${API_BASE}/api/drivers/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => {
-        setDriver(data)
-        setAvailableSeats(data.availableSeats)
-        setIsOnShift(data.isOnShift)
-        setStatus(data.status)
-        localStorage.setItem('driver_data', JSON.stringify(data))
+  // ---------- API ----------
+  const api = useCallback(async (path: string, opts: { method?: string; body?: any } = {}): Promise<ApiResult> => {
+    try {
+      const res = await fetch(`${API_BASE}/api/drivers${path}`, {
+        method: opts.method || 'GET',
+        headers: {
+          Authorization: `Bearer ${tokenRef.current}`,
+          ...(opts.body ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
       })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-
-    // Connect socket — the server requires the driver token in the handshake
-    socketRef.current = io(API_BASE, { auth: { token } })
-    socketRef.current.on('connect_error', (err: Error) => {
-      if (err.message?.includes('Authentication')) {
-        setLocationError('Session expired. Please log out and sign in again.')
+      const data = await res.json().catch(() => null)
+      if (res.status === 401) {
+        clearSession()
+        window.location.href = '/driver-login'
       }
-    })
-
-    return () => {
-      if (socketRef.current) socketRef.current.disconnect()
-      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current)
-      if (heartbeatRef.current) clearInterval(heartbeatRef.current)
+      return { ok: res.ok, status: res.status, data }
+    } catch {
+      return { ok: false, status: 0, data: { message: 'No connection. Check your network and try again.' } }
     }
   }, [])
 
+  // ---------- Screen wake lock (a locked phone stops sending GPS) ----------
+  const requestWakeLock = async () => {
+    try {
+      if ('wakeLock' in navigator && !wakeLockRef.current) {
+        wakeLockRef.current = await (navigator as any).wakeLock.request('screen')
+        wakeLockRef.current.addEventListener?.('release', () => { wakeLockRef.current = null })
+      }
+    } catch {
+      /* not supported or refused: the shift still works */
+    }
+  }
+  const releaseWakeLock = () => {
+    try { wakeLockRef.current?.release?.() } catch { /* ignore */ }
+    wakeLockRef.current = null
+  }
+
+  // ---------- GPS ----------
   const sendLocation = (lat: number, lng: number) => {
-    const seats = availableSeatsRef.current
-    if (!socketRef.current || !driverIdRef.current) return
-    socketRef.current.emit('driverLocation', {
-      driverId: driverIdRef.current,
-      lat,
-      lng,
-      availableSeats: seats,
-      status: seats === 0 ? 'full' : 'active',
-      token: tokenRef.current,
-    })
+    if (!socketRef.current) return
+    socketRef.current.emit('driverLocation', { lat, lng, availableSeats: availableSeatsRef.current })
   }
 
   const startLocationTracking = () => {
     if (!navigator.geolocation) {
-      setLocationError('GPS not supported on this device')
+      setLocationError('GPS is not supported on this phone')
       return
     }
-
-    // Never run two watches at once
     if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current)
     if (heartbeatRef.current) clearInterval(heartbeatRef.current)
 
     watchIdRef.current = navigator.geolocation.watchPosition(
-      (position) => {
+      position => {
         const { latitude, longitude, accuracy: acc } = position.coords
         setLocationEnabled(true)
         setLocationError('')
@@ -108,22 +110,23 @@ export default function DriverPortal() {
         lastPosRef.current = { lat: latitude, lng: longitude }
         sendLocation(latitude, longitude)
       },
-      (err) => {
-        // A timeout is not fatal for a watch; the next fix will arrive
-        if (err.code === 3) return
+      err => {
+        if (err.code === 3) return // a timeout is not fatal for a watch
         setLocationEnabled(false)
-        if (err.code === 1) setLocationError('Location permission denied. Please enable GPS.')
-        else if (err.code === 2) setLocationError('GPS signal not found. Move to open area.')
-        else setLocationError('GPS error. Try again.')
+        if (err.code === 1) setLocationError('Location is blocked. Allow location for this site in your browser settings.')
+        else if (err.code === 2) setLocationError('No GPS signal. Move to an open area.')
+        else setLocationError('GPS problem. Try again.')
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     )
 
-    // A phone that is not moving may send no GPS updates, so repeat the last position
+    // A parked phone may send no GPS updates, so repeat the last position
     heartbeatRef.current = setInterval(() => {
       const p = lastPosRef.current
       if (p) sendLocation(p.lat, p.lng)
     }, 20000)
+
+    requestWakeLock()
   }
 
   const stopLocationTracking = () => {
@@ -137,317 +140,485 @@ export default function DriverPortal() {
     }
     lastPosRef.current = null
     setLocationEnabled(false)
+    releaseWakeLock()
   }
 
-  const startShift = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/drivers/start-shift`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${tokenRef.current}` },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        driverIdRef.current = data._id
-        availableSeatsRef.current = data.totalSeats
-        setIsOnShift(true)
-        setStatus('active')
-        setAvailableSeats(data.totalSeats)
-        setDriver(data)
-        localStorage.setItem('driver_data', JSON.stringify(data))
-        startLocationTracking()
+  // ---------- Loading the driver ----------
+  const loadMe = useCallback(async () => {
+    const r = await api('/me')
+    if (!r.ok) return r
+    const d = r.data
+    setDriver(d)
+    setIsOnShift(!!d.isOnShift)
+    availableSeatsRef.current = d.availableSeats ?? d.totalSeats ?? 3
+    setAvailableSeats(availableSeatsRef.current)
+
+    if (d.accountStatus === 'approved') {
+      if (!d.checkedInToday && !d.isOnShift) {
+        const t = await api('/today')
+        if (t.ok) setToday(t.data)
       }
-    } catch (err) {
-      console.error(err)
+      const a = await api('/announcements')
+      if (a.ok) setAnnouncements(a.data)
+    } else if (d.accountStatus !== 'approved') {
+      stopLocationTracking()
+    }
+    return r
+  }, [api])
+
+  // Handlers the live connection calls. Kept in a ref so the connection is
+  // created once but always uses the latest functions.
+  const live = useRef<any>({})
+  live.current = {
+    reload: () => loadMe(),
+    released: () => {
+      stopLocationTracking()
+      setIsOnShift(false)
+      setMessage({ ok: false, text: 'A fleet admin released your tricycle. Please pick one again.' })
+      loadMe()
+    },
+    announcement: (a: any) => {
+      setAnnouncements(prev => (prev.some(x => x._id === a._id) ? prev : [{ ...a, read: false }, ...prev]))
+    },
+  }
+
+  // ---------- Start-up ----------
+  useEffect(() => {
+    const token = localStorage.getItem('driver_token')
+    if (!token) {
+      window.location.href = '/driver-login'
+      return
+    }
+    tokenRef.current = token
+
+    ;(async () => {
+      const r = await loadMe()
+      if (r && r.ok) {
+        setPhase('ready')
+        // After a page reload mid-shift, resume GPS automatically if the
+        // browser already has permission; otherwise show a button.
+        if (r.data.isOnShift && r.data.accountStatus === 'approved') {
+          try {
+            const perm = await (navigator as any).permissions?.query({ name: 'geolocation' })
+            if (perm && perm.state === 'granted') startLocationTracking()
+          } catch { /* the "Resume GPS" button covers this */ }
+        }
+      }
+    })()
+
+    return () => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current)
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current)
+      releaseWakeLock()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ---------- Live connection ----------
+  useEffect(() => {
+    if (phase !== 'ready') return
+    const socket = io(API_BASE, { auth: { token: tokenRef.current } })
+    socketRef.current = socket
+
+    socket.on('connect_error', (err: Error) => {
+      if (err.message?.includes('Authentication') || err.message?.includes('User not found')) {
+        setLocationError('Your session has expired. Please sign in again.')
+      }
+    })
+    socket.on('accountStatusChanged', () => live.current.reload())
+    socket.on('vehicleReassigned', () => live.current.reload())
+    socket.on('checkInReleased', () => live.current.released())
+    socket.on('fleetAnnouncement', (a: any) => live.current.announcement(a))
+
+    return () => {
+      socket.disconnect()
+      socketRef.current = null
+    }
+  }, [phase])
+
+  // While waiting for approval, check every minute as a backup to the live message
+  useEffect(() => {
+    if (phase !== 'ready' || driver?.accountStatus !== 'pending') return
+    const t = setInterval(() => loadMe(), 60000)
+    return () => clearInterval(t)
+  }, [phase, driver?.accountStatus, loadMe])
+
+  // Re-acquire the wake lock when the driver comes back to the app
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && watchIdRef.current !== null) requestWakeLock()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
+  // ---------- Actions ----------
+  const flash = (ok: boolean, text: string) => setMessage({ ok, text })
+
+  const agreeToConsent = async () => {
+    setBusy(true)
+    const r = await api('/consent', { method: 'PUT', body: { consent: true } })
+    setBusy(false)
+    if (r.ok) await loadMe()
+    else flash(false, r.data?.message || 'Could not save. Try again.')
+  }
+
+  const confirmTricycle = async () => {
+    if (!picked) return
+    setBusy(true)
+    setMessage(null)
+    const r = await api('/check-in', { method: 'POST', body: { vehicleId: picked } })
+    setBusy(false)
+    if (r.ok) {
+      setPicked('')
+      await loadMe()
+    } else {
+      flash(false, r.data?.message || 'Could not check in. Try again.')
+      setPicked('')
+      await loadMe() // refresh the list of free tricycles
     }
   }
 
-  const endShift = async () => {
-    if (!confirm('End your shift? Your location will stop broadcasting.')) return
-    try {
-      const res = await fetch(`${API_BASE}/api/drivers/end-shift`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${tokenRef.current}` },
-      })
-      if (res.ok) {
-        setIsOnShift(false)
-        setStatus('offline')
-        stopLocationTracking()
-
-        if (socketRef.current) {
-          socketRef.current.emit('driverDisconnect', { driverId: driver?._id })
-        }
-      }
-    } catch (err) {}
+  const startShift = async () => {
+    setBusy(true)
+    setMessage(null)
+    const r = await api('/start-shift', { method: 'PUT' })
+    setBusy(false)
+    if (r.ok) {
+      setIsOnShift(true)
+      availableSeatsRef.current = r.data.totalSeats
+      setAvailableSeats(r.data.totalSeats)
+      setDriver((d: any) => ({ ...d, ...r.data, isOnShift: true }))
+      startLocationTracking()
+    } else {
+      flash(false, r.data?.message || 'Could not start your shift.')
+      if (r.data?.needsConsent || r.data?.needsCheckIn) await loadMe()
+    }
   }
 
-  const updateSeats = async (newSeats: number) => {
-    const clamped = Math.max(0, Math.min(driver?.totalSeats || 3, newSeats))
+  const endShift = async (ask = true) => {
+    if (ask && !confirm('End your shift? Your location will stop being shared.')) return
+    const r = await api('/end-shift', { method: 'PUT' })
+    if (r.ok) {
+      stopLocationTracking()
+      setIsOnShift(false)
+      setAccuracy(null)
+      setLastUpdate(null)
+    } else {
+      flash(false, r.data?.message || 'Could not end your shift.')
+    }
+  }
+
+  const updateSeats = async (n: number) => {
+    const total = driver?.totalSeats || 3
+    const clamped = Math.max(0, Math.min(total, n))
     availableSeatsRef.current = clamped
     setAvailableSeats(clamped)
-    const newStatus = clamped === 0 ? 'full' : 'active'
-    setStatus(newStatus)
-
-    try {
-      await fetch(`${API_BASE}/api/drivers/seats`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenRef.current}` },
-        body: JSON.stringify({ availableSeats: clamped }),
-      })
-    } catch (err) {}
+    const r = await api('/seats', { method: 'PUT', body: { availableSeats: clamped } })
+    if (!r.ok) flash(false, r.data?.message || 'Seat count not saved. Check your connection.')
   }
 
-  const logout = () => {
-    endShift()
-    localStorage.removeItem('driver_token')
-    localStorage.removeItem('driver_data')
-    router.push('/driver-login')
+  const logout = async () => {
+    if (isOnShift) await endShift(false)
+    stopLocationTracking()
+    clearSession()
+    window.location.href = '/driver-login'
   }
 
-  if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#052e16', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center', color: 'white' }}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>🛺</div>
-        <p>Loading your portal...</p>
+  const markRead = async (id: string) => {
+    setAnnouncements(prev => prev.map(a => (a._id === id ? { ...a, read: true } : a)))
+    await api(`/announcements/${id}/read`, { method: 'POST' })
+  }
+
+  // ---------- Screens ----------
+  if (phase === 'loading' || !driver) {
+    return (
+      <div className="dv">
+        <style>{DRIVER_CSS}</style>
+        <div className="dv-center" style={{ textAlign: 'center' }}>
+          <div><div style={{ fontSize: 54 }}>🛺</div><p style={{ color: 'var(--mut)', marginTop: 8 }}>Opening your app…</p></div>
+        </div>
       </div>
+    )
+  }
+
+  const status = driver.accountStatus
+  const unread = announcements.filter(a => !a.read).length
+  const urgent = announcements.find(a => a.urgent && !a.read)
+
+  const SignOutLink = (
+    <div style={{ textAlign: 'center' }}>
+      <button className="dv-link" style={{ background: 'none', border: 0 }} onClick={logout}>Sign out</button>
     </div>
   )
 
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: isOnShift ? 'linear-gradient(135deg, #052e16, #16a34a)' : '#1a1a2e',
-      padding: '0 0 40px',
-      transition: 'background 0.5s',
-    }}>
-
-      {/* Header */}
-      <div style={{
-        background: 'rgba(0,0,0,0.3)',
-        padding: '16px 20px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 24 }}>🛺</span>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: 'white' }}>{driver?.name}</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
-              Tricycle {driver?.tricycleNumber}
+  // ----- Waiting for approval -----
+  if (status === 'pending') {
+    return (
+      <div className="dv">
+        <style>{DRIVER_CSS}</style>
+        <div className="dv-center">
+          <div style={{ width: '100%', maxWidth: 440 }}>
+            <div className="dv-card" style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 56 }}>⏳</div>
+              <h2 style={{ fontSize: 22, fontWeight: 900, margin: '6px 0' }}>Waiting for approval</h2>
+              <p style={{ color: 'var(--mut)', fontSize: 14 }}>
+                Thank you, {driver.name?.split(' ')[0]}. A fleet admin is checking your details. This screen
+                updates by itself as soon as you are approved.
+              </p>
+              <div className="dv-info" style={{ textAlign: 'left' }}>
+                <div><small>Phone</small><b>{driver.phone}</b></div>
+                <div><small>Licence number</small><b>{driver.licenseNumber || '—'}</b></div>
+              </div>
+              <button className="dv-btn g" style={{ marginTop: 18 }} onClick={() => loadMe()}>Check again</button>
             </div>
+            {SignOutLink}
           </div>
         </div>
-        <button
-          onClick={logout}
-          style={{
-            background: 'rgba(255,255,255,0.15)', border: 'none',
-            borderRadius: 8, padding: '6px 14px', cursor: 'pointer',
-            color: 'white', fontSize: 12,
-          }}
-        >
-          Logout
-        </button>
       </div>
+    )
+  }
 
-      <div style={{ padding: '24px 20px', maxWidth: 480, margin: '0 auto' }}>
-
-        {/* Status card */}
-        <div style={{
-          background: 'rgba(255,255,255,0.1)',
-          borderRadius: 20, padding: '24px',
-          textAlign: 'center', marginBottom: 24,
-          border: `2px solid ${isOnShift ? 'rgba(74,222,128,0.4)' : 'rgba(255,255,255,0.1)'}`,
-        }}>
-          <div style={{ fontSize: 64, marginBottom: 8 }}>
-            {status === 'offline' ? '😴' : status === 'full' ? '🔴' : '🟢'}
-          </div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: 'white', marginBottom: 4 }}>
-            {status === 'offline' ? 'Off Shift' : status === 'full' ? 'FULL' : 'ON SHIFT'}
-          </div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
-            {status === 'offline' ? 'Start your shift to go live' :
-             status === 'full' ? 'No seats available' :
-             `${availableSeats} of ${driver?.totalSeats} seats available`}
-          </div>
-
-          {locationEnabled && lastUpdate && (
-            <div style={{ marginTop: 10, fontSize: 11, color: '#4ade80' }}>
-              📍 GPS active • Accuracy: {accuracy}m • Updated {new Date(lastUpdate).toLocaleTimeString()}
-            </div>
-          )}
-          {locationError && (
-            <div style={{ marginTop: 10, fontSize: 11, color: '#f87171', background: 'rgba(239,68,68,0.1)', padding: '6px 12px', borderRadius: 6 }}>
-              ⚠️ {locationError}
-            </div>
-          )}
-        </div>
-
-        {/* Start/End Shift */}
-        {!isOnShift ? (
-          <button
-            onClick={startShift}
-            style={{
-              width: '100%', padding: '20px',
-              background: '#16a34a', color: 'white',
-              border: 'none', borderRadius: 16,
-              fontWeight: 900, fontSize: 20, cursor: 'pointer',
-              marginBottom: 16,
-              boxShadow: '0 8px 32px rgba(22,163,74,0.4)',
-            }}
-          >
-            🟢 Start Shift
-          </button>
-        ) : (
-          <div style={{ marginBottom: 24 }}>
-            {/* Seat controls */}
-            <div style={{
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: 20, padding: '24px',
-              marginBottom: 16,
-            }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.8)', textAlign: 'center', marginBottom: 16 }}>
-                Available Seats
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
-                <button
-                  onClick={() => updateSeats(availableSeats - 1)}
-                  disabled={availableSeats === 0}
-                  style={{
-                    width: 72, height: 72, borderRadius: '50%',
-                    background: availableSeats === 0 ? '#374151' : '#dc2626',
-                    border: 'none', color: 'white', fontSize: 32,
-                    cursor: availableSeats === 0 ? 'not-allowed' : 'pointer',
-                    fontWeight: 900,
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-                  }}
-                >
-                  −
-                </button>
-
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 64, fontWeight: 900, color: 'white', lineHeight: 1 }}>
-                    {availableSeats}
-                  </div>
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
-                    of {driver?.totalSeats}
-                  </div>
+  // ----- Rejected or suspended -----
+  if (status === 'rejected' || status === 'suspended') {
+    const rejected = status === 'rejected'
+    return (
+      <div className="dv">
+        <style>{DRIVER_CSS}</style>
+        <div className="dv-center">
+          <div style={{ width: '100%', maxWidth: 440 }}>
+            <div className="dv-card" style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 56 }}>{rejected ? '❌' : '🚫'}</div>
+              <h2 style={{ fontSize: 22, fontWeight: 900, margin: '6px 0' }}>
+                {rejected ? 'Application not approved' : 'Account suspended'}
+              </h2>
+              {driver.statusReason && (
+                <div className="dv-alert warn" style={{ textAlign: 'left' }}>
+                  <b>Reason:</b> {driver.statusReason}
                 </div>
+              )}
+              <p style={{ color: 'var(--mut)', fontSize: 14, marginTop: 14 }}>
+                Please contact the fleet office if you think this is a mistake.
+              </p>
+              <button className="dv-btn g" style={{ marginTop: 16 }} onClick={() => loadMe()}>Check again</button>
+            </div>
+            {SignOutLink}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-                <button
-                  onClick={() => updateSeats(availableSeats + 1)}
-                  disabled={availableSeats === driver?.totalSeats}
-                  style={{
-                    width: 72, height: 72, borderRadius: '50%',
-                    background: availableSeats === driver?.totalSeats ? '#374151' : '#16a34a',
-                    border: 'none', color: 'white', fontSize: 32,
-                    cursor: availableSeats === driver?.totalSeats ? 'not-allowed' : 'pointer',
-                    fontWeight: 900,
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-                  }}
-                >
-                  +
-                </button>
-              </div>
+  // ----- Approved, but has not agreed to share location yet (older accounts) -----
+  if (driver.needsConsent) {
+    return (
+      <div className="dv">
+        <style>{DRIVER_CSS}</style>
+        <div className="dv-center">
+          <div style={{ width: '100%', maxWidth: 440 }}>
+            <div className="dv-card">
+              <div style={{ fontSize: 48, textAlign: 'center' }}>📍</div>
+              <h2 style={{ fontSize: 21, fontWeight: 900, textAlign: 'center', margin: '6px 0 10px' }}>One quick thing</h2>
+              <p style={{ color: 'var(--mut)', fontSize: 14 }}>
+                The campus now shows live tricycle positions to students and staff. Please confirm you are happy with this.
+              </p>
+              <label className="dv-check">
+                <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} />
+                <span>
+                  I agree that while I am on shift, my tricycle’s live location, tricycle number and free seats are
+                  visible to students and campus staff, and my name is shown to signed-in students. My location is
+                  only shared during a shift.
+                </span>
+              </label>
+              {message && <div className={`dv-alert ${message.ok ? 'ok' : 'bad'}`}>{message.text}</div>}
+              <button className="dv-btn p" style={{ marginTop: 18 }} disabled={!agree || busy} onClick={agreeToConsent}>
+                {busy ? 'Saving…' : 'I agree, continue'}
+              </button>
+            </div>
+            {SignOutLink}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-              {/* Seat visual */}
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
-                {Array.from({ length: driver?.totalSeats || 3 }).map((_, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      width: 40, height: 40, borderRadius: 8,
-                      background: i < availableSeats ? '#4ade80' : '#374151',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 20, transition: 'background 0.2s',
-                    }}
-                  >
-                    {i < availableSeats ? '🪑' : '❌'}
-                  </div>
+  // ----- Approved, but no tricycle picked yet today: the daily check-in -----
+  const needsCheckIn = !driver.checkedInToday && !driver.isOnShift && !isOnShift
+  if (needsCheckIn) {
+    const free: any[] = today?.vehicles || []
+    return (
+      <div className="dv">
+        <style>{DRIVER_CSS}</style>
+        <div className="dv-wrap" style={{ paddingTop: 36 }}>
+          <div style={{ textAlign: 'center', marginBottom: 8 }}>
+            <div style={{ fontSize: 50 }}>🛺</div>
+            <h1 style={{ fontSize: 24, fontWeight: 900, marginTop: 4 }}>
+              {driver.greeting}, {driver.name?.split(' ')[0]}
+            </h1>
+            <p style={{ color: 'var(--mut)', fontSize: 15, marginTop: 4 }}>Which tricycle are you on today?</p>
+          </div>
+
+          {!today ? (
+            <p style={{ textAlign: 'center', color: 'var(--mut)', marginTop: 24 }}>Loading tricycles…</p>
+          ) : free.length === 0 ? (
+            <div className="dv-card" style={{ marginTop: 20, textAlign: 'center' }}>
+              <p>No tricycle is free right now.</p>
+              <p style={{ color: 'var(--mut)', fontSize: 13, marginTop: 6 }}>Ask a fleet admin, then check again.</p>
+              <button className="dv-btn g" style={{ marginTop: 14 }} onClick={() => loadMe()}>Check again</button>
+            </div>
+          ) : (
+            <>
+              <div className="dv-vlist">
+                {free.map(v => (
+                  <button key={v._id} className={`dv-v${picked === v._id ? ' on' : ''}`} onClick={() => setPicked(v._id)}>
+                    <b>{v.number}</b>
+                    <small>{v.seats} seats{v.plate ? ` · ${v.plate}` : ''}</small>
+                  </button>
                 ))}
               </div>
-
-              <div style={{ textAlign: 'center', marginTop: 12, fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
-                Tap − when a passenger boards • Tap + when they alight
-              </div>
-            </div>
-
-            {/* Quick actions */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-              <button
-                onClick={() => updateSeats(0)}
-                style={{
-                  padding: '14px', borderRadius: 12, border: 'none',
-                  background: 'rgba(239,68,68,0.2)', color: '#f87171',
-                  cursor: 'pointer', fontWeight: 700, fontSize: 14,
-                }}
-              >
-                🔴 Mark Full
+              <p style={{ color: 'var(--mut)', fontSize: 12, textAlign: 'center', marginBottom: 14 }}>
+                You keep this tricycle for the rest of today. To change it, ask a fleet admin.
+              </p>
+              {message && <div className={`dv-alert ${message.ok ? 'ok' : 'bad'}`} style={{ marginBottom: 12 }}>{message.text}</div>}
+              <button className="dv-btn p" disabled={!picked || busy} onClick={confirmTricycle}>
+                {busy ? 'Checking in…' : picked ? `Confirm ${free.find(v => v._id === picked)?.number}` : 'Choose your tricycle'}
               </button>
-              <button
-                onClick={() => updateSeats(driver?.totalSeats)}
-                style={{
-                  padding: '14px', borderRadius: 12, border: 'none',
-                  background: 'rgba(74,222,128,0.2)', color: '#4ade80',
-                  cursor: 'pointer', fontWeight: 700, fontSize: 14,
-                }}
-              >
-                🟢 All Empty
-              </button>
-            </div>
-
-            {/* GPS toggle */}
-            {!locationEnabled ? (
-              <button
-                onClick={startLocationTracking}
-                style={{
-                  width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-                  background: 'rgba(59,130,246,0.2)', color: '#60a5fa',
-                  cursor: 'pointer', fontWeight: 700, fontSize: 14, marginBottom: 10,
-                }}
-              >
-                📍 Enable GPS Location
-              </button>
-            ) : (
-              <div style={{
-                width: '100%', padding: '12px', borderRadius: 12,
-                background: 'rgba(74,222,128,0.1)', color: '#4ade80',
-                textAlign: 'center', fontSize: 13, fontWeight: 600, marginBottom: 10,
-              }}>
-                📍 GPS active — your tricycle is live on the campus map
-              </div>
-            )}
-
-            <button
-              onClick={endShift}
-              style={{
-                width: '100%', padding: '16px', borderRadius: 12, border: 'none',
-                background: 'rgba(239,68,68,0.2)', color: '#f87171',
-                cursor: 'pointer', fontWeight: 700, fontSize: 16,
-              }}
-            >
-              ⏹ End Shift
-            </button>
-          </div>
-        )}
-
-        {/* Info cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          {[
-            { icon: '🛺', label: 'Tricycle', value: driver?.tricycleNumber },
-            { icon: '🪑', label: 'Total Seats', value: driver?.totalSeats },
-            { icon: '📞', label: 'Phone', value: driver?.phone },
-            { icon: '📊', label: 'Status', value: status.toUpperCase() },
-          ].map(info => (
-            <div key={info.label} style={{
-              background: 'rgba(255,255,255,0.08)',
-              borderRadius: 12, padding: '14px',
-            }}>
-              <div style={{ fontSize: 20, marginBottom: 4 }}>{info.icon}</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 2 }}>{info.label}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>{info.value}</div>
-            </div>
-          ))}
+            </>
+          )}
+          {SignOutLink}
         </div>
       </div>
+    )
+  }
+
+  // ----- The shift screen -----
+  const total = driver.totalSeats || 3
+  const full = availableSeats === 0
+  const liveStatus = !isOnShift ? 'offline' : full ? 'full' : 'active'
+
+  return (
+    <div className={`dv${isOnShift ? ' live' : ''}`}>
+      <style>{DRIVER_CSS}</style>
+
+      <div className="dv-top">
+        <span style={{ fontSize: 26 }}>🛺</span>
+        <div className="who">
+          <b>{driver.name}</b>
+          <small>Today: {driver.tricycleNumber || '—'}</small>
+        </div>
+        <button className="dv-icon" onClick={() => setInboxOpen(true)} aria-label="Messages">
+          🔔{unread > 0 && <span className="dv-dot">{unread}</span>}
+        </button>
+        <button className="dv-mini" onClick={logout}>Sign out</button>
+      </div>
+
+      <div className="dv-wrap">
+        <div className="dv-card glass dv-status">
+          <div className="big">{liveStatus === 'offline' ? '😴' : liveStatus === 'full' ? '🔴' : '🟢'}</div>
+          <h2>{liveStatus === 'offline' ? 'Off shift' : liveStatus === 'full' ? 'FULL' : 'ON SHIFT'}</h2>
+          <p>
+            {liveStatus === 'offline'
+              ? 'Start your shift to appear on the campus map'
+              : liveStatus === 'full'
+                ? 'No seats available'
+                : `${availableSeats} of ${total} seats free`}
+          </p>
+          {isOnShift && locationEnabled && lastUpdate && (
+            <div className="dv-gps">📍 GPS active · accuracy {accuracy} m · updated {lastUpdate.toLocaleTimeString()}</div>
+          )}
+          {locationError && <div className="dv-alert bad" style={{ textAlign: 'left' }}>⚠️ {locationError}</div>}
+        </div>
+
+        {message && <div className={`dv-alert ${message.ok ? 'ok' : 'bad'}`} style={{ marginBottom: 14 }}>{message.text}</div>}
+
+        {!isOnShift ? (
+          <button className="dv-btn p" style={{ padding: 22, fontSize: 19 }} disabled={busy} onClick={startShift}>
+            {busy ? 'Starting…' : '🟢 Start shift'}
+          </button>
+        ) : (
+          <>
+            <div className="dv-card glass">
+              <p style={{ textAlign: 'center', fontWeight: 700, color: 'rgba(255,255,255,.85)', marginBottom: 14 }}>Free seats</p>
+              <div className="dv-seats">
+                <button style={{ background: '#dc2626' }} disabled={availableSeats === 0} onClick={() => updateSeats(availableSeats - 1)} aria-label="One passenger boarded">−</button>
+                <div>
+                  <div className="num">{availableSeats}</div>
+                  <div className="of">of {total}</div>
+                </div>
+                <button style={{ background: '#16a34a' }} disabled={availableSeats === total} onClick={() => updateSeats(availableSeats + 1)} aria-label="One passenger left">+</button>
+              </div>
+              <div className="dv-pips">
+                {Array.from({ length: total }).map((_, i) => (
+                  <span key={i} style={{ background: i < availableSeats ? '#4ade80' : '#374151' }}>{i < availableSeats ? '🪑' : '❌'}</span>
+                ))}
+              </div>
+              <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--mut)' }}>Tap − when a passenger boards, + when they get off</p>
+            </div>
+
+            <div className="dv-grid2">
+              <button className="dv-btn d" onClick={() => updateSeats(0)}>🔴 Mark full</button>
+              <button className="dv-btn p" style={{ boxShadow: 'none' }} onClick={() => updateSeats(total)}>🟢 All empty</button>
+            </div>
+
+            {!locationEnabled && (
+              <button className="dv-btn b" onClick={startLocationTracking}>📍 Turn on GPS</button>
+            )}
+            <button className="dv-btn d" style={{ marginTop: 10 }} onClick={() => endShift(true)}>⏹ End shift</button>
+          </>
+        )}
+
+        {driver.isFleetAdmin && (
+          <Link href="/fleet" className="dv-btn g" style={{ marginTop: 14 }}>🛡️ Open fleet portal</Link>
+        )}
+
+        <div className="dv-info">
+          <div><small>Tricycle today</small><b>{driver.tricycleNumber || '—'}</b></div>
+          <div><small>Total seats</small><b>{total}</b></div>
+          <div><small>Phone</small><b>{driver.phone}</b></div>
+          <div><small>Status</small><b>{liveStatus.toUpperCase()}</b></div>
+        </div>
+      </div>
+
+      {/* Urgent message: must be acknowledged */}
+      {urgent && (
+        <div className="dv-overlay">
+          <div className="dv-sheet urgent" role="alertdialog" aria-label="Urgent message">
+            <span className="dv-tag">URGENT</span>
+            <h3>{urgent.title}</h3>
+            <p style={{ margin: '10px 0 6px', fontSize: 15 }}>{urgent.body}</p>
+            <small style={{ color: 'var(--mut)' }}>{urgent.from ? `From ${urgent.from} · ` : ''}{fmtDateTime(urgent.createdAt)}</small>
+            <button className="dv-btn p" style={{ marginTop: 18 }} onClick={() => markRead(urgent._id)}>OK, I understand</button>
+          </div>
+        </div>
+      )}
+
+      {/* Message inbox */}
+      {inboxOpen && !urgent && (
+        <div className="dv-overlay" onClick={() => setInboxOpen(false)}>
+          <div className="dv-sheet" onClick={e => e.stopPropagation()} role="dialog" aria-label="Messages">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <h3>Messages</h3>
+              <button className="dv-mini" onClick={() => setInboxOpen(false)}>Close</button>
+            </div>
+            {announcements.length === 0 ? (
+              <p style={{ color: 'var(--mut)', padding: '24px 0', textAlign: 'center' }}>No messages yet.</p>
+            ) : (
+              announcements.map(a => (
+                <div
+                  key={a._id}
+                  className={`dv-ann${a.read ? '' : ' unread'}`}
+                  onClick={() => { if (!a.read) markRead(a._id) }}
+                >
+                  {a.urgent && <span className="dv-tag">URGENT</span>}
+                  <b>{a.title}</b>
+                  <p>{a.body}</p>
+                  <small>{a.from ? `${a.from} · ` : ''}{fmtDateTime(a.createdAt)}</small>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

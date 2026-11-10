@@ -22,6 +22,7 @@ interface User {
   firstLogin: boolean
   avatarColor: string
   regNumber?: string
+  isFleetHead?: boolean
 }
 
 interface Department {
@@ -67,6 +68,12 @@ export default function AdminPage() {
   const [departments, setDepartments] = useState<Department[]>([])
   const [academic, setAcademic] = useState<Academic | null>(null)
   const [showcasePosts, setShowcasePosts] = useState<ShowcasePost[]>([])
+
+  // Fleet Head
+  const [fleetHead, setFleetHead] = useState<any>(null)
+  const [fleetPick, setFleetPick] = useState('')
+  const [fleetMessage, setFleetMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  const [fleetSubmitting, setFleetSubmitting] = useState(false)
 
 
   const [deptName, setDeptName] = useState('')
@@ -152,6 +159,17 @@ export default function AdminPage() {
     check()
   }, [])
 
+  const loadFleetHead = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/fleet/head`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setFleetHead(res.ok ? await res.json() : null)
+    } catch {
+      setFleetHead(null)
+    }
+  }
+
     const loadAll = async () => {
     if (!token) return
     setLoading(true)
@@ -173,6 +191,7 @@ export default function AdminPage() {
       setAcademic(acadData)
       setShowcasePosts(Array.isArray(showcaseData) ? showcaseData : [])
       setFaculties(Array.isArray(facultiesData) ? facultiesData : [])
+      await loadFleetHead()
     } catch (err) {
       console.error(err)
     } finally {
@@ -338,6 +357,58 @@ export default function AdminPage() {
       if (res.ok) await loadAll()
       else { const d = await res.json(); alert(d.message) }
     } catch (err) { console.error(err) }
+  }
+
+  // ===== Fleet Head handlers =====
+
+  const appointFleetHead = async () => {
+    if (!fleetPick) return
+    const who = lecturers.find(l => l._id === fleetPick)?.name || 'this lecturer'
+    const replacing = fleetHead ? ` This replaces ${fleetHead.name}.` : ''
+    if (!confirm(`Appoint ${who} as Fleet Head of the TETFund tricycle fleet?${replacing}`)) return
+    setFleetSubmitting(true)
+    setFleetMessage(null)
+    try {
+      const res = await fetch(`${API_BASE}/api/fleet/head/${fleetPick}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setFleetMessage({ ok: true, text: `${who} is now the Fleet Head.` })
+        setFleetPick('')
+        await loadFleetHead()
+      } else {
+        setFleetMessage({ ok: false, text: data.message || 'Failed to appoint Fleet Head' })
+      }
+    } catch {
+      setFleetMessage({ ok: false, text: 'Something went wrong' })
+    } finally {
+      setFleetSubmitting(false)
+    }
+  }
+
+  const removeFleetHead = async () => {
+    if (!fleetHead) return
+    if (!confirm(`Remove ${fleetHead.name} as Fleet Head? They keep their lecturer account but lose access to the fleet portal.`)) return
+    setFleetSubmitting(true)
+    setFleetMessage(null)
+    try {
+      const res = await fetch(`${API_BASE}/api/fleet/head`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        setFleetMessage({ ok: true, text: 'Fleet Head removed.' })
+        await loadFleetHead()
+      } else {
+        setFleetMessage({ ok: false, text: 'Failed to remove Fleet Head' })
+      }
+    } catch {
+      setFleetMessage({ ok: false, text: 'Something went wrong' })
+    } finally {
+      setFleetSubmitting(false)
+    }
   }
 
   const handleCreateSession = async (e: FormEvent) => {
@@ -557,6 +628,7 @@ export default function AdminPage() {
               { key: 'dept_admins', label: '🏛️ Dept Admins' },
               { key: 'faculty_admins', label: '🛡️ Faculty Admins' },
               { key: 'hosts', label: '🎙️ Host Permissions' },
+              { key: 'fleet', label: '🛺 Fleet' },
               { key: 'showcase', label: '🎬 Showcase' },
               { key: 'academic', label: '📅 Academic' },
             ].map(tab => (
@@ -1330,6 +1402,17 @@ export default function AdminPage() {
                                   u.role === 'department_admin' ? '🏛️ Dept Admin' : '👨‍🏫 Lecturer'}
                               </span>
 
+                              {/* Fleet Head badge */}
+                              {(u.isFleetHead || fleetHead?._id === u._id) && (
+                                <span style={{
+                                  padding: '3px 8px', borderRadius: 999,
+                                  fontSize: 11, fontWeight: 700,
+                                  background: '#fef9c3', color: '#854d0e',
+                                }}>
+                                  🛺 Fleet Head
+                                </span>
+                              )}
+
                               {/* Promote to Dept Admin — only for lecturers */}
                               {u.role === 'lecturer' && (
                                 <button onClick={() => promoteToDeptAdmin(u._id)} style={{
@@ -1592,6 +1675,81 @@ export default function AdminPage() {
                     })}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* ===== FLEET TAB ===== */}
+            {activeTab === 'fleet' && (
+              <div>
+                <div className="alert alert-success" style={{ marginBottom: 20 }}>
+                  The Fleet Head runs the TETFund tricycle fleet portal: approving drivers, assigning
+                  tricycles and appointing fleet admins. They keep their normal lecturer account.
+                  Only one person holds this role at a time.
+                </div>
+
+                <div style={{ background: bg, borderRadius: 12, padding: 20, border: `1px solid ${border}`, marginBottom: 24 }}>
+                  <h2 style={{ fontSize: 16, marginBottom: 12 }}>Current Fleet Head</h2>
+                  {fleetHead ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                      <div style={{
+                        width: 40, height: 40, borderRadius: '50%',
+                        background: fleetHead.avatarColor || '#16a34a',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'white', fontSize: 13, fontWeight: 700, flexShrink: 0,
+                      }}>
+                        {getInitials(fleetHead.name)}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 160 }}>
+                        <div style={{ fontWeight: 700 }}>{fleetHead.name}</div>
+                        <div style={{ fontSize: 12, color: textSecondary }}>
+                          {fleetHead.email}{fleetHead.department ? ` • ${fleetHead.department}` : ''}
+                        </div>
+                      </div>
+                      <button
+                        onClick={removeFleetHead}
+                        disabled={fleetSubmitting}
+                        style={{
+                          padding: '6px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                          background: '#fef2f2', color: '#dc2626', fontWeight: 600, fontSize: 12,
+                        }}
+                      >
+                        Remove Fleet Head
+                      </button>
+                    </div>
+                  ) : (
+                    <p style={{ color: '#9ca3af', fontSize: 13 }}>
+                      No Fleet Head yet. Appoint a lecturer below.
+                    </p>
+                  )}
+                </div>
+
+                <div style={{ background: bg, borderRadius: 12, padding: 20, border: `1px solid ${border}` }}>
+                  <h2 style={{ fontSize: 16, marginBottom: 12 }}>
+                    {fleetHead ? 'Replace Fleet Head' : 'Appoint Fleet Head'}
+                  </h2>
+                  <label>Choose a lecturer</label>
+                  <select value={fleetPick} onChange={e => setFleetPick(e.target.value)}>
+                    <option value="">Choose lecturer...</option>
+                    {lecturers.filter(l => l._id !== fleetHead?._id).map(u => (
+                      <option key={u._id} value={u._id}>
+                        {u.name} — {u.department || 'No dept'} ({u.faculty || 'No faculty'})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    className="btn-primary"
+                    onClick={appointFleetHead}
+                    disabled={!fleetPick || fleetSubmitting}
+                    style={{ marginTop: 16 }}
+                  >
+                    {fleetSubmitting ? 'Saving...' : fleetHead ? 'Replace Fleet Head' : 'Appoint Fleet Head'}
+                  </button>
+                  {fleetMessage && (
+                    <div className={fleetMessage.ok ? 'alert alert-success' : 'alert alert-error'} style={{ marginTop: 12 }}>
+                      {fleetMessage.text}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

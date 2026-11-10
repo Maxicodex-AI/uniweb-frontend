@@ -1,188 +1,162 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { DRIVER_CSS } from '../driver/driverStyles'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
+// 08012345678, +2348012345678 and 234 801 234 5678 are the same number.
+// This mirrors the server so the driver gets an instant message.
+function normalizePhone(p: string) {
+  let s = p.replace(/[\s\-()]/g, '')
+  if (s.startsWith('+234')) s = '0' + s.slice(4)
+  else if (s.startsWith('234') && s.length === 13) s = '0' + s.slice(3)
+  return s
+}
+
+// Where to go after signing in. Only paths inside this site are allowed, so
+// the link cannot be used to send someone to another website.
+function getNext(): string {
+  const r = new URLSearchParams(window.location.search).get('next')
+  const safe = r && r.startsWith('/') && !r.startsWith('//') && !r.startsWith('/\\')
+  return safe ? (r as string) : '/driver'
+}
+
 export default function DriverLogin() {
   const router = useRouter()
-  const [isRegister, setIsRegister] = useState(false)
-  const [phone, setPhone] = useState('')
-  const [password, setPassword] = useState('')
+  const [mode, setMode] = useState<'signin' | 'register'>('signin')
   const [name, setName] = useState('')
-  const [tricycleNumber, setTricycleNumber] = useState('')
-  const [totalSeats, setTotalSeats] = useState('3')
+  const [phone, setPhone] = useState('')
+  const [license, setLicense] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [consent, setConsent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Already signed in? Go straight on. (The driver app clears an expired token,
+  // so this cannot loop.)
+  useEffect(() => {
+    if (localStorage.getItem('driver_token')) router.replace(getNext())
+  }, [router])
+
+  const switchMode = (m: 'signin' | 'register') => {
+    setMode(m)
+    setError('')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
     setError('')
 
-    try {
-      const endpoint = isRegister ? '/api/drivers/register' : '/api/drivers/login'
-      const body = isRegister
-        ? { name, phone, password, tricycleNumber, totalSeats: parseInt(totalSeats) }
-        : { phone, password }
+    const cleanPhone = normalizePhone(phone)
+    if (!/^0\d{10}$/.test(cleanPhone)) {
+      setError('Enter your 11-digit phone number, for example 08012345678')
+      return
+    }
 
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+    if (mode === 'register') {
+      if (name.trim().length < 2) return setError('Enter your full name')
+      if (license.replace(/\s+/g, '').length < 5) return setError('Enter your driving licence number')
+      if (password.length < 6) return setError('Your password must be at least 6 characters')
+      if (password !== confirm) return setError('The two passwords do not match')
+      if (!consent) return setError('You must agree to share your location during your shift')
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/drivers/${mode === 'register' ? 'register' : 'login'}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(
+          mode === 'register'
+            ? { name: name.trim(), phone: cleanPhone, password, licenseNumber: license, locationConsent: true }
+            : { phone: cleanPhone, password }
+        ),
       })
-
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(data.message || 'Failed')
+        setError(data.message || 'Something went wrong. Please try again.')
         return
       }
 
       localStorage.setItem('driver_token', data.token)
       localStorage.setItem('driver_data', JSON.stringify(data.driver))
-      router.push('/driver')
-    } catch (err) {
-      setError('Connection error. Try again.')
+      router.push(getNext())
+    } catch {
+      setError('No connection. Check your network and try again.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #052e16, #16a34a)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '24px',
-    }}>
-      <div style={{
-        background: 'white', borderRadius: 20, padding: '32px 28px',
-        width: '100%', maxWidth: 400,
-        boxShadow: '0 24px 64px rgba(0,0,0,0.3)',
-      }}>
+    <div className="dv">
+      <style>{DRIVER_CSS}</style>
+      <div className="dv-center">
+        <div style={{ width: '100%', maxWidth: 440 }}>
+          <div className="dv-logo">
+            <i>🛺</i>
+            <h1>Campus Tricycle Drivers</h1>
+            <p>TETFund fleet · powered by UniWeb</p>
+          </div>
 
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ fontSize: 48, marginBottom: 8 }}>🛺</div>
-          <h1 style={{ fontSize: 22, fontWeight: 900, color: '#052e16', marginBottom: 4 }}>
-            UniWeb Driver
-          </h1>
-          <p style={{ fontSize: 13, color: '#6b7280' }}>
-            {isRegister ? 'Register your tricycle' : 'Sign in to start your shift'}
-          </p>
-        </div>
-
-        {/* Toggle */}
-        <div style={{ display: 'flex', background: '#f3f4f6', borderRadius: 10, padding: 4, marginBottom: 24 }}>
-          <button
-            onClick={() => setIsRegister(false)}
-            style={{
-              flex: 1, padding: '10px', borderRadius: 8, border: 'none',
-              background: !isRegister ? '#16a34a' : 'transparent',
-              color: !isRegister ? 'white' : '#6b7280',
-              cursor: 'pointer', fontWeight: 600, fontSize: 14,
-            }}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => setIsRegister(true)}
-            style={{
-              flex: 1, padding: '10px', borderRadius: 8, border: 'none',
-              background: isRegister ? '#16a34a' : 'transparent',
-              color: isRegister ? 'white' : '#6b7280',
-              cursor: 'pointer', fontWeight: 600, fontSize: 14,
-            }}
-          >
-            Register
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          {isRegister && (
-            <>
-              <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>
-                Full Name
-              </label>
-              <input
-                type="text" placeholder="e.g. Emeka Johnson"
-                value={name} onChange={e => setName(e.target.value)} required
-                style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #e5e7eb', borderRadius: 10, fontSize: 15, outline: 'none', marginBottom: 14 }}
-              />
-
-              <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>
-                Tricycle Number
-              </label>
-              <input
-                type="text" placeholder="e.g. TRI-001"
-                value={tricycleNumber} onChange={e => setTricycleNumber(e.target.value)} required
-                style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #e5e7eb', borderRadius: 10, fontSize: 15, outline: 'none', marginBottom: 14 }}
-              />
-
-              <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>
-                Total Seats (excluding driver)
-              </label>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-                {['2', '3', '4'].map(s => (
-                  <button
-                    key={s} type="button"
-                    onClick={() => setTotalSeats(s)}
-                    style={{
-                      flex: 1, padding: '10px', borderRadius: 8, border: 'none',
-                      background: totalSeats === s ? '#16a34a' : '#f3f4f6',
-                      color: totalSeats === s ? 'white' : '#374151',
-                      cursor: 'pointer', fontWeight: 700, fontSize: 16,
-                    }}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>
-            Phone Number
-          </label>
-          <input
-            type="tel" placeholder="e.g. 08012345678"
-            value={phone} onChange={e => setPhone(e.target.value)} required
-            style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #e5e7eb', borderRadius: 10, fontSize: 15, outline: 'none', marginBottom: 14 }}
-          />
-
-          <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>
-            Password
-          </label>
-          <input
-            type="password" placeholder="Your password"
-            value={password} onChange={e => setPassword(e.target.value)} required
-            style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #e5e7eb', borderRadius: 10, fontSize: 15, outline: 'none', marginBottom: 20 }}
-          />
-
-          {error && (
-            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#dc2626', marginBottom: 14 }}>
-              {error}
+          <div className="dv-card">
+            <div className="dv-tabs" role="tablist">
+              <button type="button" role="tab" aria-selected={mode === 'signin'} className={mode === 'signin' ? 'on' : ''} onClick={() => switchMode('signin')}>Sign in</button>
+              <button type="button" role="tab" aria-selected={mode === 'register'} className={mode === 'register' ? 'on' : ''} onClick={() => switchMode('register')}>Register</button>
             </div>
-          )}
 
-          <button
-            type="submit" disabled={loading}
-            style={{
-              width: '100%', padding: '14px',
-              background: loading ? '#9ca3af' : '#16a34a',
-              color: 'white', border: 'none', borderRadius: 10,
-              fontWeight: 800, fontSize: 16, cursor: loading ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {loading ? 'Please wait...' : isRegister ? 'Register & Start' : 'Sign In'}
-          </button>
-        </form>
+            <form onSubmit={handleSubmit} noValidate>
+              {mode === 'register' && (
+                <>
+                  <label className="dv-label" htmlFor="name" style={{ marginTop: 0 }}>Full name</label>
+                  <input id="name" className="dv-input" type="text" autoComplete="name" placeholder="e.g. Emeka Johnson" value={name} onChange={e => setName(e.target.value)} />
+                </>
+              )}
 
-        <div style={{ textAlign: 'center', marginTop: 20 }}>
-          <a href="/" style={{ fontSize: 13, color: '#9ca3af', textDecoration: 'none' }}>
-            ← Back to UniWeb
-          </a>
+              <label className="dv-label" htmlFor="phone" style={mode === 'signin' ? { marginTop: 0 } : undefined}>Phone number</label>
+              <input id="phone" className="dv-input" type="tel" inputMode="tel" autoComplete="tel" placeholder="08012345678" value={phone} onChange={e => setPhone(e.target.value)} />
+
+              {mode === 'register' && (
+                <>
+                  <label className="dv-label" htmlFor="license">Driving licence number</label>
+                  <input id="license" className="dv-input" type="text" autoCapitalize="characters" autoComplete="off" placeholder="As written on your licence" value={license} onChange={e => setLicense(e.target.value)} />
+                  <p className="dv-hint">A fleet admin will check this before you can start work.</p>
+                </>
+              )}
+
+              <label className="dv-label" htmlFor="password">Password</label>
+              <input id="password" className="dv-input" type="password" autoComplete={mode === 'register' ? 'new-password' : 'current-password'} placeholder={mode === 'register' ? 'At least 6 characters' : 'Your password'} value={password} onChange={e => setPassword(e.target.value)} />
+
+              {mode === 'register' && (
+                <>
+                  <label className="dv-label" htmlFor="confirm">Confirm password</label>
+                  <input id="confirm" className="dv-input" type="password" autoComplete="new-password" placeholder="Type it again" value={confirm} onChange={e => setConfirm(e.target.value)} />
+
+                  <label className="dv-check">
+                    <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
+                    <span>
+                      I agree that while I am on shift, my tricycle’s live location, tricycle number and free seats
+                      are visible to students and campus staff, and my name is shown to signed-in students.
+                      My location is only shared during a shift.
+                    </span>
+                  </label>
+                </>
+              )}
+
+              {error && <div className="dv-alert bad" role="alert">{error}</div>}
+
+              <button type="submit" className="dv-btn p" disabled={loading} style={{ marginTop: 20 }}>
+                {loading ? 'Please wait…' : mode === 'register' ? 'Create my account' : 'Sign in'}
+              </button>
+            </form>
+          </div>
+
+          <div style={{ textAlign: 'center' }}>
+            <a href="/" className="dv-link">← Back to UniWeb</a>
+          </div>
         </div>
       </div>
     </div>

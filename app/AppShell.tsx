@@ -13,13 +13,15 @@ const publicPages = ['/', '/login', '/register']
 // Pages that handle their own full-screen layout
 const fullscreenPages = ['/chat', '/live/video']
 
-// Driver portal: /driver-login, /driver and /driver/...
+// Driver and fleet portals: /driver-login, /driver, /driver/..., /fleet
 // These render with NO student chrome (no sidebar, topbar, bottom tabs) and
 // NO public Login/Register navbar — the driver pages draw their own header.
 const isDriverPage = (pathname: string) =>
   pathname === '/driver-login' ||
   pathname === '/driver' ||
-  pathname.startsWith('/driver/')
+  pathname.startsWith('/driver/') ||
+  pathname === '/fleet' ||
+  pathname.startsWith('/fleet/')
 
 export default function AppShell({
   children,

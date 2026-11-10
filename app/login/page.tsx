@@ -4,6 +4,21 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { setAuthToken } from '../utils/auth';
 
+// Where to go after login. The middleware sends people here as
+// /login?redirect=/some/page, so honour that. Only paths inside this site are
+// allowed: "//evil.com" and "https://evil.com" would otherwise turn the login
+// page into an open redirect.
+function getRedirect(): string {
+  const r = new URLSearchParams(window.location.search).get('redirect');
+  const safe =
+    r &&
+    r.startsWith('/') &&
+    !r.startsWith('//') &&
+    !r.startsWith('/\\') &&
+    !r.startsWith('/login');
+  return safe ? (r as string) : '/dashboard';
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -35,7 +50,7 @@ export default function LoginPage() {
       // Save token as cookie instead of localStorage
       setAuthToken(data.token);
 
-      router.push('/dashboard');
+      router.push(getRedirect());
 
     } catch (err) {
       setMessage('Something went wrong. Please try again.');
@@ -57,6 +72,7 @@ export default function LoginPage() {
           <input
             type="email"
             placeholder="Your email"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -66,6 +82,7 @@ export default function LoginPage() {
           <input
             type="password"
             placeholder="Your password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -90,6 +107,11 @@ export default function LoginPage() {
         <p style={{ marginTop: 20, fontSize: 14, color: '#4b5563' }}>
           Don't have an account?{' '}
           <a href="/register">Register here</a>
+        </p>
+
+        <p style={{ marginTop: 8, fontSize: 14, color: '#4b5563' }}>
+          Tricycle driver or fleet admin?{' '}
+          <a href="/driver-login">Sign in here</a>
         </p>
       </div>
     </div>

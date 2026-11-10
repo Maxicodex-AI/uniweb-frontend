@@ -10,7 +10,12 @@ const publicRoutes = ['/', '/login', '/register', '/driver-login'];
 // server-side. Matching exactly (not startsWith('/driver')) avoids making
 // unrelated future routes like /drivers-report public by accident.
 const isDriverPortal = (pathname: string) =>
-  pathname === '/driver' || pathname.startsWith('/driver/');
+  pathname === '/driver' ||
+  pathname.startsWith('/driver/') ||
+  // Fleet portal: the Fleet Head signs in with UniWeb, fleet admins with a
+  // driver login. The page checks the token itself and the API enforces it.
+  pathname === '/fleet' ||
+  pathname.startsWith('/fleet/');
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
