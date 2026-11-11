@@ -328,7 +328,7 @@ function Approvals({ api, say, ask, version, refreshAll, openDriver }: any) {
       confirm: 'Reject',
       danger: true,
       reason: true,
-      onConfirm: async reason => {
+      onConfirm: async (reason: string) => {
         const r = await api(`/drivers/${d._id}/reject`, { method: 'PUT', body: { reason } })
         say(r.ok, r.data?.message || 'Could not reject')
         await refreshAll()
