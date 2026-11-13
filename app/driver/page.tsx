@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import io from 'socket.io-client'
 import { DRIVER_CSS } from './driverStyles'
+import BrandMark from '../BrandMark'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
@@ -359,6 +360,7 @@ export default function DriverApp() {
         <style>{DRIVER_CSS}</style>
         <div className="dv-center">
           <div style={{ width: '100%', maxWidth: 440 }}>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}><BrandMark height={34} /></div>
             <div className="dv-card" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 56 }}>⏳</div>
               <h2 style={{ fontSize: 22, fontWeight: 900, margin: '6px 0' }}>Waiting for approval</h2>
@@ -387,6 +389,7 @@ export default function DriverApp() {
         <style>{DRIVER_CSS}</style>
         <div className="dv-center">
           <div style={{ width: '100%', maxWidth: 440 }}>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}><BrandMark height={34} /></div>
             <div className="dv-card" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 56 }}>{rejected ? '❌' : '🚫'}</div>
               <h2 style={{ fontSize: 22, fontWeight: 900, margin: '6px 0' }}>
@@ -416,6 +419,7 @@ export default function DriverApp() {
         <style>{DRIVER_CSS}</style>
         <div className="dv-center">
           <div style={{ width: '100%', maxWidth: 440 }}>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}><BrandMark height={34} /></div>
             <div className="dv-card">
               <div style={{ fontSize: 48, textAlign: 'center' }}>📍</div>
               <h2 style={{ fontSize: 21, fontWeight: 900, textAlign: 'center', margin: '6px 0 10px' }}>One quick thing</h2>
@@ -451,7 +455,7 @@ export default function DriverApp() {
         <style>{DRIVER_CSS}</style>
         <div className="dv-wrap" style={{ paddingTop: 36 }}>
           <div style={{ textAlign: 'center', marginBottom: 8 }}>
-            <div style={{ fontSize: 50 }}>🛺</div>
+            <div style={{ marginBottom: 4 }}><BrandMark height={36} /></div>
             <h1 style={{ fontSize: 24, fontWeight: 900, marginTop: 4 }}>
               {driver.greeting}, {driver.name?.split(' ')[0]}
             </h1>
@@ -501,7 +505,7 @@ export default function DriverApp() {
       <style>{DRIVER_CSS}</style>
 
       <div className="dv-top">
-        <span style={{ fontSize: 26 }}>🛺</span>
+        <BrandMark height={20} />
         <div className="who">
           <b>{driver.name}</b>
           <small>Today: {driver.tricycleNumber || '—'}</small>

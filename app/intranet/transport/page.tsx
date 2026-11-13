@@ -5,6 +5,7 @@ import Link from 'next/link'
 import io from 'socket.io-client'
 import { getAuthToken } from '../../utils/auth'
 import { useTheme } from '../../context/ThemeContext'
+import { BRAND } from '../../brand'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 const CAMPUS_CENTER = { lat: 6.8699, lng: 7.4082 }
@@ -859,7 +860,7 @@ export default function TransportPage() {
         <div className="tp-title">
           <h1>Campus Transport</h1>
           <p>
-            {drivers.length} tricycle{drivers.length !== 1 ? 's' : ''} active now
+            {BRAND.owner} tricycles · {drivers.length} active now
           </p>
         </div>
         <button

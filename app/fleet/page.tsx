@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import io from 'socket.io-client'
 import { getAuthToken } from '../utils/auth'
+import { BRAND } from '../brand'
+import BrandMark from '../BrandMark'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 const TZ = 'Africa/Lagos'
@@ -1092,8 +1094,8 @@ export default function FleetPortal() {
         <style>{CSS}</style>
         <div className="fp-gate">
           <div className="fp-card">
-            <div style={{ fontSize: 44 }}>🛺</div>
-            <h1 style={{ fontSize: 20, fontWeight: 800, margin: '6px 0' }}>TETFund Fleet Portal</h1>
+            <div style={{ marginBottom: 8 }}>{BRAND.logo ? <BrandMark height={40} /> : <span style={{ fontSize: 44 }}>🛺</span>}</div>
+            <h1 style={{ fontSize: 20, fontWeight: 800, margin: '6px 0' }}>{BRAND.fleetTitle}</h1>
             <p style={{ color: 'var(--mut)', fontSize: 14 }}>This area is for the Fleet Head and fleet admins. Choose how you sign in.</p>
             <a className="fp-btn fp-p" href="/login?redirect=/fleet">I’m the Fleet Head (UniWeb sign-in)</a>
             <a className="fp-btn fp-g" href="/driver-login?next=/fleet">I’m a fleet admin (driver sign-in)</a>
@@ -1111,8 +1113,8 @@ export default function FleetPortal() {
 
       <header className="fp-top">
         <div className="fp-brand">
-          <i>🛺</i>
-          <div><b>TETFund Campus Tricycle Fleet</b><small>Fleet portal · Powered by UniWeb</small></div>
+          {BRAND.logo ? <BrandMark height={30} /> : <i>🛺</i>}
+          <div><b>{BRAND.fleetTitle}</b><small>{BRAND.fleetSubtitle}</small></div>
         </div>
         <div className="fp-who">
           <span>{me.actor.name} · {roleLabel}</span>

@@ -14,9 +14,8 @@ const resources = [
   { icon: '📚', title: 'Library', desc: 'Access digital library resources', href: '#', color: '#16a34a', bg: '#f0fdf4', bgDark: '#052e16' },
   { icon: '🏥', title: 'Health Services', desc: 'Campus health and wellness', href: '#', color: '#dc2626', bg: '#fef2f2', bgDark: '#450a0a' },
   // UPDATED: Transport now routes to the live tricycle tracking page
-  { icon: '🚌', title: 'Transport', desc: 'Track tricycles live', href: '/intranet/transport', color: '#d97706', bg: '#fffbeb', bgDark: '#451a03' },
+  { icon: '🚌', title: 'Transport', desc: 'Track TETFund tricycles live', href: '/intranet/transport', color: '#d97706', bg: '#fffbeb', bgDark: '#451a03' },
 ]
-
 const announcements = [
   { title: 'Registration Portal Now Open', time: '2 hours ago', type: 'urgent' },
   { title: 'Library Extended Hours During Exams', time: '1 day ago', type: 'info' },

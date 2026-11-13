@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DRIVER_CSS } from '../driver/driverStyles'
+import { BRAND } from '../brand'
+import BrandMark from '../BrandMark'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
@@ -97,9 +99,9 @@ export default function DriverLogin() {
       <div className="dv-center">
         <div style={{ width: '100%', maxWidth: 440 }}>
           <div className="dv-logo">
-            <i>🛺</i>
-            <h1>Campus Tricycle Drivers</h1>
-            <p>TETFund fleet · powered by UniWeb</p>
+            {BRAND.logo ? <BrandMark height={46} /> : <i>🛺</i>}
+            <h1 style={{ marginTop: 12 }}>{BRAND.driverTitle}</h1>
+            <p>{BRAND.driverSubtitle}</p>
           </div>
 
           <div className="dv-card">
