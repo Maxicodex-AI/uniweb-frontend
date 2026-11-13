@@ -13,6 +13,7 @@ interface User {
   department: string
   level: string | null
   avatarColor?: string
+  isFleetHead?: boolean
 }
 
 interface SidebarProps {
@@ -24,6 +25,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
+  // 'head' | 'superadmin' when this person may open the fleet portal, else null
+  const [fleetKind, setFleetKind] = useState<string | null>(null)
   const { isDark, bgCard, text, textSecondary, border } = useTheme()
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
@@ -38,9 +41,34 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       .catch(() => {})
   }, [pathname])
 
+  // The Fleet Head (and the Super Admin, as a backup) get a link to the fleet
+  // portal. Asking the fleet API is the reliable test: it answers yes only for
+  // people the portal itself would let in. Students are skipped, and so is
+  // anyone /users/me already says is not the Fleet Head.
+  useEffect(() => {
+    const token = getAuthToken()
+    if (!token || !user || user.role === 'student') {
+      setFleetKind(null)
+      return
+    }
+    if (user.role !== 'admin' && user.isFleetHead === false) {
+      setFleetKind(null)
+      return
+    }
+
+    let alive = true
+    fetch(`${API_BASE}/api/fleet/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => { if (alive) setFleetKind(data?.actor?.kind || null) })
+      .catch(() => { if (alive) setFleetKind(null) })
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.role])
+
   const handleLogout = () => {
     removeAuthToken()
     setUser(null)
+    setFleetKind(null)
     router.push('/login')
     onClose()
   }
@@ -52,7 +80,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     if (!user) return ''
     if (user.role === 'admin') return 'Super Admin'
     if (user.role === 'faculty_admin') return 'Faculty Admin'
-    if (user.role === 'lecturer') return 'Lecturer'
+    if (user.role === 'department_admin') return 'Department Admin'
+    if (user.role === 'lecturer') return fleetKind === 'head' ? 'Lecturer • Fleet Head' : 'Lecturer'
     return `Student • ${user.level}`
   }
 
@@ -97,13 +126,18 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { href: '/documents', icon: '📄', label: 'Documents' },
   ]
 
-  const adminItems = user?.role === 'admin' ? [
+  const roleAdminItems = user?.role === 'admin' ? [
     { href: '/admin', icon: '⚙️', label: 'Admin Panel' },
   ] : user?.role === 'faculty_admin' ? [
     { href: '/faculty-admin', icon: '🛡️', label: 'Faculty Panel' },
   ] : user?.role === 'department_admin' ? [
     { href: '/dept-admin', icon: '🏛️', label: 'Department Panel' },
   ] : []
+
+  const adminItems = [
+    ...roleAdminItems,
+    ...(fleetKind ? [{ href: '/fleet', icon: '🛺', label: 'Fleet Portal' }] : []),
+  ]
 
   const bottomItems = [
     { href: '/settings', icon: '⚙️', label: 'Settings' },
@@ -123,7 +157,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         onClick={onClose}
       />
 
-            <aside className={`sidebar ${isOpen ? 'open' : ''}`} style={{
+      <aside className={`sidebar ${isOpen ? 'open' : ''}`} style={{
         background: isDark ? '#020617' : '#052e16',
       }}>
 
