@@ -8,6 +8,8 @@ export const DRIVER_CSS = `
 .dv.live{background:linear-gradient(160deg,#052e16,#14532d)}
 .dv *{box-sizing:border-box}
 .dv h1,.dv h2,.dv h3,.dv p{margin:0}
+/* The site's global stylesheet gives headings a dark colour, which vanished on this dark background */
+.dv h1,.dv h2,.dv h3,.dv h4{color:var(--ink)}
 .dv a{color:inherit;text-decoration:none}
 .dv button{font-family:inherit;cursor:pointer}
 .dv :focus-visible{outline:3px solid var(--warn);outline-offset:2px;border-radius:8px}
@@ -58,6 +60,12 @@ export const DRIVER_CSS = `
 .dv-status h2{font-size:22px;font-weight:900;margin:6px 0 2px}
 .dv-status p{color:var(--mut);font-size:14px}
 .dv-gps{margin-top:12px;font-size:12px;color:#86efac}
+.dv-clock{text-align:center;margin-bottom:14px}
+.dv-clock .time{font-size:40px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:1px;line-height:1.1}
+.dv-clock .date{color:var(--mut);font-size:13px;margin-top:2px}
+.dv-clock .shift{margin-top:12px;background:rgba(34,197,94,.16);border:1px solid rgba(34,197,94,.4);border-radius:12px;padding:10px}
+.dv-clock .shift b{display:block;font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;color:#86efac;line-height:1.2}
+.dv-clock .shift small{color:#bbf7d0;font-size:12px}
 .dv-seats{display:flex;align-items:center;justify-content:center;gap:22px;margin:6px 0 4px}
 .dv-seats button{width:76px;height:76px;border-radius:50%;border:0;font-size:36px;font-weight:900;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.3)}
 .dv-seats button:disabled{background:#374151!important;cursor:not-allowed}

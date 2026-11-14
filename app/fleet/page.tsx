@@ -35,6 +35,7 @@ const CSS = `
 @media (prefers-color-scheme:dark){.fp{--bg:#0a120e;--card:#121d17;--ink:#e6f0ea;--mut:#9fb2a8;--line:#22332a;--soft:#17271e;--warnbg:#3a2a08;--warn:#fbbf24;--badbg:#3b1414;--bad:#fca5a5;--okbg:#10331d;--ok:#86efac;--mutbg:#1b2a22;--shadow:none}}
 .fp *{box-sizing:border-box}
 .fp h1,.fp h2,.fp h3,.fp h4,.fp p{margin:0}
+.fp h1,.fp h2,.fp h3,.fp h4{color:var(--ink)}
 .fp a{color:inherit;text-decoration:none}
 .fp button{font-family:inherit;cursor:pointer}
 .fp :focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}

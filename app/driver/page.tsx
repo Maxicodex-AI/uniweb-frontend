@@ -22,6 +22,43 @@ const fmtDateTime = (d?: string | Date | null) =>
       })
     : ''
 
+// Live clock (Nigerian time) and, during a shift, how long the shift has run.
+// Both use the server's clock, so a wrong phone clock cannot throw them off.
+function ShiftClock({ startedAt, offset }: { startedAt?: string | null; offset: number }) {
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setTick(x => x + 1), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  const now = new Date(Date.now() + offset)
+  const time = now.toLocaleTimeString('en-GB', { timeZone: 'Africa/Lagos', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  const date = now.toLocaleDateString('en-GB', { timeZone: 'Africa/Lagos', weekday: 'long', day: 'numeric', month: 'long' })
+
+  let elapsed = ''
+  let since = ''
+  if (startedAt) {
+    const s = Math.max(0, Math.floor((now.getTime() - new Date(startedAt).getTime()) / 1000))
+    const pad = (n: number) => String(n).padStart(2, '0')
+    elapsed = `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`
+    since = new Date(startedAt).toLocaleTimeString('en-GB', { timeZone: 'Africa/Lagos', hour: '2-digit', minute: '2-digit' })
+  }
+
+  return (
+    <div className="dv-card glass dv-clock">
+      <div className="time">{time}</div>
+      <div className="date">{date}</div>
+      {startedAt && (
+        <div className="shift">
+          <small>On shift for</small>
+          <b>{elapsed}</b>
+          <small>started at {since}</small>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function DriverApp() {
   const [phase, setPhase] = useState<'loading' | 'ready'>('loading')
   const [driver, setDriver] = useState<any>(null)
@@ -48,6 +85,7 @@ export default function DriverApp() {
   const lastPosRef = useRef<{ lat: number; lng: number } | null>(null)
   const availableSeatsRef = useRef(3)
   const wakeLockRef = useRef<any>(null)
+  const clockOffsetRef = useRef(0) // server time minus phone time, in ms
 
   // ---------- API ----------
   const api = useCallback(async (path: string, opts: { method?: string; body?: any } = {}): Promise<ApiResult> => {
@@ -149,6 +187,7 @@ export default function DriverApp() {
     const r = await api('/me')
     if (!r.ok) return r
     const d = r.data
+    if (d.serverNow) clockOffsetRef.current = new Date(d.serverNow).getTime() - Date.now()
     setDriver(d)
     setIsOnShift(!!d.isOnShift)
     availableSeatsRef.current = d.availableSeats ?? d.totalSeats ?? 3
@@ -286,6 +325,7 @@ export default function DriverApp() {
     const r = await api('/start-shift', { method: 'PUT' })
     setBusy(false)
     if (r.ok) {
+      if (r.data.serverNow) clockOffsetRef.current = new Date(r.data.serverNow).getTime() - Date.now()
       setIsOnShift(true)
       availableSeatsRef.current = r.data.totalSeats
       setAvailableSeats(r.data.totalSeats)
@@ -303,6 +343,7 @@ export default function DriverApp() {
     if (r.ok) {
       stopLocationTracking()
       setIsOnShift(false)
+      setDriver((d: any) => ({ ...d, isOnShift: false, shiftStartedAt: null }))
       setAccuracy(null)
       setLastUpdate(null)
     } else {
@@ -365,7 +406,7 @@ export default function DriverApp() {
               <div style={{ fontSize: 56 }}>⏳</div>
               <h2 style={{ fontSize: 22, fontWeight: 900, margin: '6px 0' }}>Waiting for approval</h2>
               <p style={{ color: 'var(--mut)', fontSize: 14 }}>
-                Thank you, {driver.name?.split(' ')[0]}. A fleet admin is checking your details. This screen
+                Thank you, {driver.name}. A fleet admin is checking your details. This screen
                 updates by itself as soon as you are approved.
               </p>
               <div className="dv-info" style={{ textAlign: 'left' }}>
@@ -456,8 +497,8 @@ export default function DriverApp() {
         <div className="dv-wrap" style={{ paddingTop: 36 }}>
           <div style={{ textAlign: 'center', marginBottom: 8 }}>
             <div style={{ marginBottom: 4 }}><BrandMark height={36} /></div>
-            <h1 style={{ fontSize: 24, fontWeight: 900, marginTop: 4 }}>
-              {driver.greeting}, {driver.name?.split(' ')[0]}
+            <h1 style={{ fontSize: 24, fontWeight: 900, marginTop: 4, lineHeight: 1.25, wordBreak: 'break-word' }}>
+              {driver.greeting}, {driver.name}
             </h1>
             <p style={{ color: 'var(--mut)', fontSize: 15, marginTop: 4 }}>Which tricycle are you on today?</p>
           </div>
@@ -517,6 +558,8 @@ export default function DriverApp() {
       </div>
 
       <div className="dv-wrap">
+        <ShiftClock startedAt={isOnShift ? driver.shiftStartedAt : null} offset={clockOffsetRef.current} />
+
         <div className="dv-card glass dv-status">
           <div className="big">{liveStatus === 'offline' ? '😴' : liveStatus === 'full' ? '🔴' : '🟢'}</div>
           <h2>{liveStatus === 'offline' ? 'Off shift' : liveStatus === 'full' ? 'FULL' : 'ON SHIFT'}</h2>
