@@ -12,7 +12,7 @@ const resources = [
   { icon: '🎓', title: 'Scholarships', desc: 'Find scholarship opportunities', href: '#', color: '#dc2626', bg: '#fef2f2', bgDark: '#450a0a' },
   { icon: '💼', title: 'Career Opportunities', desc: 'Jobs, internships and more', href: '#', color: '#0891b2', bg: '#ecfeff', bgDark: '#083344' },
   { icon: '📚', title: 'Library', desc: 'Access digital library resources', href: '#', color: '#16a34a', bg: '#f0fdf4', bgDark: '#052e16' },
-  { icon: '🏥', title: 'Health Services', desc: 'Campus health and wellness', href: '#', color: '#dc2626', bg: '#fef2f2', bgDark: '#450a0a' },
+  { icon: '🏥', title: 'Health Services', desc: 'Campus health and wellness', href: '/intranet/health-services', color: '#dc2626', bg: '#fef2f2', bgDark: '#450a0a' },
   // UPDATED: Transport now routes to the live tricycle tracking page
   { icon: '🚌', title: 'Transport', desc: 'Track TETFund tricycles live', href: '/intranet/transport', color: '#d97706', bg: '#fffbeb', bgDark: '#451a03' },
 ]
