@@ -5,6 +5,7 @@ import Link from 'next/link'
 import io from 'socket.io-client'
 import { DRIVER_CSS } from './driverStyles'
 import BrandMark from '../BrandMark'
+import { BRAND } from '../brand'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 
@@ -59,6 +60,57 @@ function ShiftClock({ startedAt, offset }: { startedAt?: string | null; offset: 
   )
 }
 
+// Press and hold for two seconds. A tap in a pocket or a bump cannot send an alert.
+function SosButton({ onTrigger, disabled }: { onTrigger: () => void; disabled?: boolean }) {
+  const HOLD_MS = 2000
+  const [progress, setProgress] = useState(0)
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const clear = () => {
+    if (timer.current) {
+      clearInterval(timer.current)
+      timer.current = null
+    }
+  }
+  const begin = () => {
+    if (disabled || timer.current) return
+    const start = Date.now()
+    timer.current = setInterval(() => {
+      const p = Math.min(1, (Date.now() - start) / HOLD_MS)
+      setProgress(p)
+      if (p >= 1) {
+        clear()
+        setProgress(0)
+        onTrigger()
+      }
+    }, 40)
+  }
+  const end = () => {
+    clear()
+    setProgress(0)
+  }
+  useEffect(() => () => clear(), [])
+
+  return (
+    <button
+      type="button"
+      className="dv-sosbtn"
+      disabled={disabled}
+      onPointerDown={begin}
+      onPointerUp={end}
+      onPointerLeave={end}
+      onPointerCancel={end}
+      onKeyDown={e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) begin() }}
+      onKeyUp={end}
+      onContextMenu={e => e.preventDefault()}
+      aria-label="Emergency alert. Press and hold for two seconds."
+    >
+      <span className="fill" style={{ width: `${progress * 100}%` }} />
+      <span className="txt">🆘 Hold for 2 seconds · emergency</span>
+    </button>
+  )
+}
+
 export default function DriverApp() {
   const [phase, setPhase] = useState<'loading' | 'ready'>('loading')
   const [driver, setDriver] = useState<any>(null)
@@ -86,6 +138,14 @@ export default function DriverApp() {
   const availableSeatsRef = useRef(3)
   const wakeLockRef = useRef<any>(null)
   const clockOffsetRef = useRef(0) // server time minus phone time, in ms
+
+  // SOS: the driver's active (or just-closed) alert
+  const [sos, setSos] = useState<any>(null)
+  const [sosBusy, setSosBusy] = useState(false)
+  const [sosError, setSosError] = useState('')
+  const sosWatchRef = useRef<number | null>(null)
+  const sosBeatRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const sosPosRef = useRef<{ lat: number; lng: number } | null>(null)
 
   // ---------- API ----------
   const api = useCallback(async (path: string, opts: { method?: string; body?: any } = {}): Promise<ApiResult> => {
@@ -182,6 +242,72 @@ export default function DriverApp() {
     releaseWakeLock()
   }
 
+  // ---------- SOS ----------
+  const stopSosTracking = () => {
+    if (sosWatchRef.current !== null) {
+      navigator.geolocation.clearWatch(sosWatchRef.current)
+      sosWatchRef.current = null
+    }
+    if (sosBeatRef.current) {
+      clearInterval(sosBeatRef.current)
+      sosBeatRef.current = null
+    }
+    sosPosRef.current = null
+  }
+
+  // While an alert is active, keep telling the fleet admins where the phone is.
+  // This is separate from shift tracking, so an alert never changes the public map.
+  const startSosTracking = () => {
+    if (!navigator.geolocation || sosWatchRef.current !== null) return
+    sosWatchRef.current = navigator.geolocation.watchPosition(
+      pos => {
+        sosPosRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+        socketRef.current?.emit('sosLocation', sosPosRef.current)
+      },
+      () => { /* no GPS: the alert still stands, and admins have the phone number */ },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+    )
+    sosBeatRef.current = setInterval(() => {
+      if (sosPosRef.current) socketRef.current?.emit('sosLocation', sosPosRef.current)
+    }, 10000)
+  }
+
+  const getOnePosition = () =>
+    new Promise<{ lat: number; lng: number } | null>(resolve => {
+      if (!navigator.geolocation) return resolve(null)
+      navigator.geolocation.getCurrentPosition(
+        p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 4000, maximumAge: 15000 }
+      )
+    })
+
+  const triggerSos = async () => {
+    try { navigator.vibrate?.([250, 100, 250]) } catch { /* not supported */ }
+    setSosBusy(true)
+    setSosError('')
+    const pos = lastPosRef.current || (await getOnePosition())
+    const r = await api('/sos', { method: 'POST', body: pos ? { lat: pos.lat, lng: pos.lng } : {} })
+    setSosBusy(false)
+    if (r.ok) {
+      setSos(r.data.alert)
+      startSosTracking()
+    } else {
+      setSosError(r.data?.message || 'Could not send the alert. Please call campus security.')
+    }
+  }
+
+  const cancelSos = async () => {
+    if (!confirm('Cancel the emergency alert? Only do this if you are safe.')) return
+    const r = await api('/sos/cancel', { method: 'POST' })
+    if (r.ok) {
+      stopSosTracking()
+      setSos((p: any) => (p ? { ...p, status: 'cancelled', active: false, note: '' } : p))
+    } else {
+      setSosError(r.data?.message || 'Could not cancel. Please try again.')
+    }
+  }
+
   // ---------- Loading the driver ----------
   const loadMe = useCallback(async () => {
     const r = await api('/me')
@@ -189,6 +315,10 @@ export default function DriverApp() {
     const d = r.data
     if (d.serverNow) clockOffsetRef.current = new Date(d.serverNow).getTime() - Date.now()
     setDriver(d)
+    if (d.activeSos) {
+      setSos(d.activeSos)
+      startSosTracking()
+    }
     setIsOnShift(!!d.isOnShift)
     availableSeatsRef.current = d.availableSeats ?? d.totalSeats ?? 3
     setAvailableSeats(availableSeatsRef.current)
@@ -220,6 +350,14 @@ export default function DriverApp() {
     announcement: (a: any) => {
       setAnnouncements(prev => (prev.some(x => x._id === a._id) ? prev : [{ ...a, read: false }, ...prev]))
     },
+    sosStatus: (s: any) => {
+      setSos((prev: any) =>
+        prev
+          ? { ...prev, status: s.status, active: s.status === 'acknowledged', handledBy: s.by, note: s.note || prev.note }
+          : prev
+      )
+      if (s.status === 'resolved' || s.status === 'cancelled') stopSosTracking()
+    },
   }
 
   // ---------- Start-up ----------
@@ -249,6 +387,8 @@ export default function DriverApp() {
     return () => {
       if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current)
       if (heartbeatRef.current) clearInterval(heartbeatRef.current)
+      if (sosWatchRef.current !== null) navigator.geolocation.clearWatch(sosWatchRef.current)
+      if (sosBeatRef.current) clearInterval(sosBeatRef.current)
       releaseWakeLock()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -269,6 +409,7 @@ export default function DriverApp() {
     socket.on('vehicleReassigned', () => live.current.reload())
     socket.on('checkInReleased', () => live.current.released())
     socket.on('fleetAnnouncement', (a: any) => live.current.announcement(a))
+    socket.on('sosStatus', (s: any) => live.current.sosStatus(s))
 
     return () => {
       socket.disconnect()
@@ -387,6 +528,40 @@ export default function DriverApp() {
   const status = driver.accountStatus
   const unread = announcements.filter(a => !a.read).length
   const urgent = announcements.find(a => a.urgent && !a.read)
+
+  // The emergency screen. It covers everything until the alert is closed.
+  const sosLive = sos && (sos.status === 'open' || sos.status === 'acknowledged')
+  const sosOverlay = sos ? (
+    <div className="dv-sos" role="alertdialog" aria-label="Emergency alert">
+      <div className="dv-sos-card">
+        {sosLive ? (
+          <>
+            <div style={{ fontSize: 68 }}><span className="dv-sos-pulse">🆘</span></div>
+            <h2>Help alert sent</h2>
+            <p>Fleet admins have your location and your phone number.</p>
+            <div className={`dv-sos-status${sos.status === 'acknowledged' ? ' ack' : ''}`}>
+              {sos.status === 'acknowledged'
+                ? `✅ ${sos.handledBy || sos.acknowledgedBy?.name || 'A fleet admin'} has seen your alert and is responding.`
+                : '⏳ Waiting for a fleet admin to respond…'}
+            </div>
+            <small>Sent {fmtDateTime(sos.createdAt)} · your live location is being shared</small>
+            {BRAND.securityPhone && (
+              <a className="dv-btn p" href={`tel:${BRAND.securityPhone}`}>📞 Call campus security</a>
+            )}
+            <button className="dv-btn g" onClick={cancelSos}>I’m safe — cancel the alert</button>
+            {sosError && <div className="dv-alert bad" role="alert">{sosError}</div>}
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 60 }}>{sos.status === 'resolved' ? '✅' : '👍'}</div>
+            <h2>{sos.status === 'resolved' ? 'Alert closed' : 'Alert cancelled'}</h2>
+            {sos.note && <p>{sos.note}</p>}
+            <button className="dv-btn p" onClick={() => setSos(null)}>OK</button>
+          </>
+        )}
+      </div>
+    </div>
+  ) : null
 
   const SignOutLink = (
     <div style={{ textAlign: 'center' }}>
@@ -532,6 +707,7 @@ export default function DriverApp() {
           )}
           {SignOutLink}
         </div>
+        {sosOverlay}
       </div>
     )
   }
@@ -614,6 +790,14 @@ export default function DriverApp() {
           </>
         )}
 
+        <div style={{ marginTop: 22 }}>
+          <SosButton disabled={sosBusy || !!sos} onTrigger={triggerSos} />
+          <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--mut)', marginTop: 8 }}>
+            {sosBusy ? 'Sending your alert…' : 'Only for emergencies. Fleet admins will see your location and phone number.'}
+          </p>
+          {sosError && !sos && <div className="dv-alert bad" role="alert">{sosError}</div>}
+        </div>
+
         {driver.isFleetAdmin && (
           <Link href="/fleet" className="dv-btn g" style={{ marginTop: 14 }}>🛡️ Open fleet portal</Link>
         )}
@@ -638,6 +822,8 @@ export default function DriverApp() {
           </div>
         </div>
       )}
+
+      {sosOverlay}
 
       {/* Message inbox */}
       {inboxOpen && !urgent && (

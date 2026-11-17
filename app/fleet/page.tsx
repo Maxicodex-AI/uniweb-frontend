@@ -25,6 +25,7 @@ type DialogCfg = {
   confirm: string
   danger?: boolean
   reason?: boolean
+  reasonLabel?: string
   onConfirm: (reason: string) => Promise<void> | void
 }
 type Ask = (cfg: DialogCfg) => void
@@ -119,6 +120,13 @@ const CSS = `
 .fp-gate .fp-btn{display:block;width:100%;margin-top:12px;padding:13px}
 .fp-load{text-align:center;padding:80px 20px;color:var(--mut)}
 
+.fp-sosbar{background:#b91c1c;color:#fff;padding:12px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;animation:fp-flash 1s ease-in-out infinite}
+.fp-sosbar .grow{flex:1;min-width:200px;font-size:14px}
+.fp-sosbar .fp-btn{background:#fff;color:#b91c1c}
+.fp-sos-card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.fp-sos-card.open{border-color:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.2)}
+.fp-sos-card h3{font-size:17px;font-weight:800}
+@keyframes fp-flash{0%,100%{background:#b91c1c}50%{background:#7f1d1d}}
 @keyframes fp-fade{from{opacity:0}to{opacity:1}}
 @keyframes fp-up{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 @media (max-width:640px){
@@ -183,6 +191,10 @@ function describeAudit(e: any): string {
       const who = x.audience === 'all' ? 'all drivers' : x.audience === 'onShift' ? 'drivers on shift' : 'one driver'
       return `${a} sent “${x.title}” to ${who} (${x.recipients})`
     }
+    case 'sos.raise': return `${a} raised an SOS alert${x.vehicle ? ` (${x.vehicle})` : ''}`
+    case 'sos.acknowledge': return `${a} acknowledged the SOS from ${t}`
+    case 'sos.resolve': return `${a} closed the SOS from ${t}${x.note ? ` — “${x.note}”` : ''}`
+    case 'sos.cancel': return `${t || a} cancelled their SOS (false alarm)`
     default: return `${a}: ${e.action}`
   }
 }
@@ -232,7 +244,7 @@ function ConfirmDialog({ cfg, onClose }: { cfg: DialogCfg; onClose: () => void }
       {cfg.body && <p style={{ fontSize: 14, color: 'var(--mut)' }}>{cfg.body}</p>}
       {cfg.reason && (
         <>
-          <label className="fp-label">Reason (the driver will see this)</label>
+          <label className="fp-label">{cfg.reasonLabel || 'Reason (the driver will see this)'}</label>
           <textarea
             className="fp-text"
             value={reason}
@@ -263,10 +275,11 @@ function ConfirmDialog({ cfg, onClose }: { cfg: DialogCfg; onClose: () => void }
 }
 
 // ===== Tab: Overview =====
-function Overview({ me, api, goTab, version }: { me: Me; api: Api; goTab: (t: string) => void; version: number }) {
+function Overview({ me, api, goTab, version, sosCount }: { me: Me; api: Api; goTab: (t: string) => void; version: number; sosCount: number }) {
   const { data: recent } = useLoad(api, '/audit?limit=6', version)
   const c = me.counts
   const cards = [
+    { label: 'Active SOS alerts', value: sosCount, tab: 'sos', warn: sosCount > 0 },
     { label: 'Waiting for approval', value: c.pending, tab: 'approvals', warn: c.pending > 0 },
     { label: 'On shift now', value: c.onShift, tab: 'live' },
     { label: 'Approved drivers', value: c.approved, tab: 'drivers' },
@@ -985,9 +998,141 @@ function ActivityTab({ api, version }: any) {
   )
 }
 
+// ===== SOS =====
+const mapUrl = (loc: any) => `https://www.google.com/maps?q=${loc.lat},${loc.lng}`
+
+function SosCard({ a, me, api, say, ask, reload }: any) {
+  const loc = a.location
+  const hasLoc = loc && loc.lat != null
+  const mine = me.actor.kind === 'admin' && String(me.actor.id) === String(a.driver)
+  const waiting = a.status === 'open'
+
+  const acknowledge = async () => {
+    const r = await api(`/sos/${a._id}/acknowledge`, { method: 'PUT' })
+    say(r.ok, r.data?.message || 'Could not acknowledge')
+    await reload()
+  }
+  const close = () =>
+    ask({
+      title: `Close ${a.driverName}’s alert?`,
+      body: 'Only close it once the driver is safe or help has arrived.',
+      confirm: 'Close alert',
+      reason: true,
+      reasonLabel: 'What happened? (the driver will see this)',
+      onConfirm: async (note: string) => {
+        const r = await api(`/sos/${a._id}/resolve`, { method: 'PUT', body: { note } })
+        say(r.ok, r.data?.message || 'Could not close')
+        await reload()
+      },
+    })
+
+  return (
+    <div className={`fp-sos-card${waiting ? ' open' : ''}`}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
+        <span className={`fp-pill ${waiting ? 'bad' : 'warn'}`}>
+          {waiting ? 'NOBODY RESPONDING' : `Responding: ${a.acknowledgedBy?.name || 'an admin'}`}
+        </span>
+        <span style={{ color: 'var(--mut)', fontSize: 12 }}>Raised {ago(a.createdAt)}</span>
+      </div>
+      <h3>{a.driverName}{a.vehicleNumber ? ` · ${a.vehicleNumber}` : ''}</h3>
+      <div className="fp-meta" style={{ margin: '4px 0 10px' }}>
+        <a href={`tel:${a.driverPhone}`}>📞 {a.driverPhone}</a>
+        {hasLoc ? (
+          <>
+            <span>📍 {Number(loc.lat).toFixed(5)}, {Number(loc.lng).toFixed(5)} · updated {ago(loc.updatedAt)}</span>
+            <a href={mapUrl(loc)} target="_blank" rel="noopener noreferrer">Open in Google Maps ↗</a>
+          </>
+        ) : (
+          <span>📍 No location yet. Call the driver.</span>
+        )}
+      </div>
+      {mine ? (
+        <p className="fp-sub" style={{ margin: 0 }}>This is your own alert. Another admin must respond.</p>
+      ) : (
+        <div className="fp-actions">
+          <a className="fp-btn fp-p" href={`tel:${a.driverPhone}`}>📞 Call driver</a>
+          {waiting && <button className="fp-btn fp-d" onClick={acknowledge}>I’m responding</button>}
+          <button className="fp-btn fp-g" onClick={close}>Close alert</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SosTab({ sos, me, api, say, ask, reload }: any) {
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setTick((x: number) => x + 1), 10000)
+    return () => clearInterval(t)
+  }, [])
+
+  return (
+    <div>
+      <h2 className="fp-h">SOS alerts</h2>
+      <p className="fp-sub">
+        An alarm rings on this page, and the tab flashes, while an alert has nobody responding. Keep this page open
+        during shifts. Tap anywhere once after opening it so the browser allows sound.
+      </p>
+
+      {sos.active.length === 0 ? (
+        <div className="fp-empty"><i>🟢</i>No active alerts.</div>
+      ) : (
+        sos.active.map((a: any) => (
+          <SosCard key={a._id} a={a} me={me} api={api} say={say} ask={ask} reload={reload} />
+        ))
+      )}
+
+      <h3 className="fp-sec">Recently closed</h3>
+      {sos.recent.length === 0 ? (
+        <div className="fp-empty"><i>🧾</i>Nothing yet.</div>
+      ) : (
+        <div className="fp-list">
+          {sos.recent.map((a: any) => (
+            <div key={a._id} className="fp-row">
+              <div className="fp-grow">
+                <div className="fp-name">{a.driverName}{a.vehicleNumber ? ` · ${a.vehicleNumber}` : ''}</div>
+                <div className="fp-meta">
+                  <span>{fmtDateTime(a.createdAt)}</span>
+                  {a.status === 'resolved' && <span>Closed by {a.resolvedBy?.name}{a.note ? ` — “${a.note}”` : ''}</span>}
+                  {a.status === 'cancelled' && <span>Cancelled by the driver (false alarm)</span>}
+                </div>
+              </div>
+              <span className={`fp-pill ${a.status === 'resolved' ? 'ok' : ''}`}>{a.status}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Red bar across the top of every tab while an alert has nobody responding
+function SosBar({ alerts, goSos, api, say, reload }: any) {
+  const acknowledge = async (a: any) => {
+    const r = await api(`/sos/${a._id}/acknowledge`, { method: 'PUT' })
+    say(r.ok, r.data?.message || 'Could not acknowledge')
+    await reload()
+  }
+  return (
+    <>
+      {alerts.map((a: any) => (
+        <div key={a._id} className="fp-sosbar" role="alert">
+          <div className="grow">
+            <b>🚨 SOS — {a.driverName}{a.vehicleNumber ? ` · ${a.vehicleNumber}` : ''}</b>
+            <div>{a.driverPhone} · raised {ago(a.createdAt)}</div>
+          </div>
+          <a className="fp-btn" href={`tel:${a.driverPhone}`}>📞 Call</a>
+          <button className="fp-btn" onClick={() => acknowledge(a)}>I’m responding</button>
+          <button className="fp-btn" onClick={goSos}>Details</button>
+        </div>
+      ))}
+    </>
+  )
+}
+
 // ===== The portal =====
 const TABS: [string, string, string][] = [
-  ['overview', 'Overview', '📊'], ['approvals', 'Approvals', '📝'], ['drivers', 'Drivers', '👥'],
+  ['overview', 'Overview', '📊'], ['sos', 'SOS', '🚨'], ['approvals', 'Approvals', '📝'], ['drivers', 'Drivers', '👥'],
   ['tricycles', 'Tricycles', '🛺'], ['today', 'Today', '📅'], ['messages', 'Messages', '📢'],
   ['live', 'Live', '📍'], ['activity', 'Activity', '🧾'],
 ]
@@ -1002,6 +1147,8 @@ export default function FleetPortal() {
   const [drawerId, setDrawerId] = useState<string | null>(null)
   const [composeFor, setComposeFor] = useState<{ id: string; name: string } | null>(null)
   const tokenRef = useRef('')
+  const [sos, setSos] = useState<{ active: any[]; recent: any[] }>({ active: [], recent: [] })
+  const audioRef = useRef<any>(null)
 
   const api: Api = useCallback(async (path, opts = {}) => {
     try {
@@ -1029,10 +1176,16 @@ export default function FleetPortal() {
     if (r.ok) setMe(r.data)
   }, [api])
 
+  const loadSos = useCallback(async () => {
+    const r = await api('/sos')
+    if (r.ok) setSos(r.data)
+  }, [api])
+
   const refreshAll = useCallback(async () => {
     await refreshMe()
+    await loadSos()
     setVersion(v => v + 1)
-  }, [refreshMe])
+  }, [refreshMe, loadSos])
 
   // ----- Sign-in: the Fleet Head uses a UniWeb token, fleet admins a driver token -----
   useEffect(() => {
@@ -1069,8 +1222,98 @@ export default function FleetPortal() {
     socket.on('driverRegistered', (d: any) => { say(true, `New driver application: ${d?.name || 'a driver'}`); bump() })
     socket.on('driverOnline', bump)
     socket.on('driverOffline', bump)
+
+    // ----- SOS: live alerts, updates and positions -----
+    socket.on('connect', () => { loadSos() }) // also catches up after a dropped connection
+    socket.on('sosAlert', (a: any) => {
+      setSos(prev => ({ ...prev, active: [a, ...prev.active.filter(x => x._id !== a._id)] }))
+      say(false, `🚨 SOS from ${a.driverName}`)
+    })
+    socket.on('sosUpdate', (a: any) => {
+      setSos(prev =>
+        a.active
+          ? { ...prev, active: prev.active.map(x => (x._id === a._id ? a : x)) }
+          : {
+              active: prev.active.filter(x => x._id !== a._id),
+              recent: [a, ...prev.recent.filter(x => x._id !== a._id)].slice(0, 20),
+            }
+      )
+    })
+    socket.on('sosLocation', (d: any) => {
+      setSos(prev => ({
+        ...prev,
+        active: prev.active.map(x =>
+          x._id === d.alertId ? { ...x, location: { lat: d.lat, lng: d.lng, updatedAt: d.updatedAt } } : x
+        ),
+      }))
+    })
+
     return () => { socket.disconnect() }
-  }, [phase, refreshAll, say])
+  }, [phase, refreshAll, loadSos, say])
+
+  // First load of the alerts once signed in
+  useEffect(() => {
+    if (phase === 'ready') loadSos()
+  }, [phase, loadSos])
+
+  // Browsers only allow sound after the person has tapped the page once
+  useEffect(() => {
+    const unlock = () => {
+      try {
+        const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext
+        if (Ctx) {
+          audioRef.current = audioRef.current || new Ctx()
+          audioRef.current.resume?.()
+        }
+      } catch { /* sound is a bonus: the red bar and flashing tab still work */ }
+    }
+    window.addEventListener('pointerdown', unlock)
+    return () => window.removeEventListener('pointerdown', unlock)
+  }, [])
+
+  // The alarm: a two-tone siren, a vibration and a flashing tab title while any
+  // alert has nobody responding. It stops as soon as someone acknowledges.
+  const waitingCount = sos.active.filter(a => a.status === 'open').length
+  useEffect(() => {
+    if (waitingCount === 0) return
+    const siren = () => {
+      try { navigator.vibrate?.([300, 150, 300]) } catch { /* not supported */ }
+      const ctx = audioRef.current
+      if (!ctx) return
+      try {
+        const t0 = ctx.currentTime
+        ;[880, 660].forEach((f, i) => {
+          const o = ctx.createOscillator()
+          const g = ctx.createGain()
+          o.type = 'square'
+          o.frequency.value = f
+          const s = t0 + i * 0.3
+          g.gain.setValueAtTime(0.0001, s)
+          g.gain.exponentialRampToValueAtTime(0.25, s + 0.02)
+          g.gain.exponentialRampToValueAtTime(0.0001, s + 0.28)
+          o.connect(g)
+          g.connect(ctx.destination)
+          o.start(s)
+          o.stop(s + 0.3)
+        })
+      } catch { /* ignore */ }
+    }
+    siren()
+    const beat = setInterval(siren, 1300)
+
+    const original = document.title
+    let flip = false
+    const title = setInterval(() => {
+      flip = !flip
+      document.title = flip ? '🚨 SOS ALERT' : original
+    }, 900)
+
+    return () => {
+      clearInterval(beat)
+      clearInterval(title)
+      document.title = original
+    }
+  }, [waitingCount])
 
   useEffect(() => {
     if (!toast) return
@@ -1130,17 +1373,27 @@ export default function FleetPortal() {
         </div>
       </header>
 
+      <SosBar
+        alerts={sos.active.filter(a => a.status === 'open')}
+        goSos={() => setTab('sos')}
+        api={api}
+        say={say}
+        reload={loadSos}
+      />
+
       <nav className="fp-tabs" aria-label="Fleet sections">
         {TABS.map(([key, label, icon]) => (
           <button key={key} className={`fp-tab${tab === key ? ' on' : ''}`} onClick={() => setTab(key)}>
             <span>{icon}</span>{label}
             {key === 'approvals' && me.counts.pending > 0 && <span className="fp-badge">{me.counts.pending}</span>}
+            {key === 'sos' && sos.active.length > 0 && <span className="fp-badge">{sos.active.length}</span>}
           </button>
         ))}
       </nav>
 
       <main className="fp-main">
-        {tab === 'overview' && <Overview me={me} api={api} goTab={setTab} version={version} />}
+        {tab === 'overview' && <Overview me={me} api={api} goTab={setTab} version={version} sosCount={sos.active.length} />}
+        {tab === 'sos' && <SosTab sos={sos} me={me} api={api} say={say} ask={ask} reload={loadSos} />}
         {tab === 'approvals' && <Approvals api={api} say={say} ask={ask} version={version} refreshAll={refreshAll} openDriver={setDrawerId} />}
         {tab === 'drivers' && <DriversTab api={api} version={version} openDriver={setDrawerId} />}
         {tab === 'tricycles' && <VehiclesTab api={api} say={say} ask={ask} version={version} refreshAll={refreshAll} />}

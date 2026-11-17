@@ -85,6 +85,20 @@ export const DRIVER_CSS = `
 .dv-v b{display:block;font-size:18px}
 .dv-v small{color:var(--mut);font-size:12px}
 
+.dv-sosbtn{position:relative;overflow:hidden;display:block;width:100%;border:2px solid #ef4444;background:#3b0d0d;color:#fecaca;border-radius:16px;padding:18px;font-size:16px;font-weight:900;text-align:center;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.dv-sosbtn .fill{position:absolute;left:0;top:0;bottom:0;background:#dc2626}
+.dv-sosbtn .txt{position:relative}
+.dv-sosbtn:disabled{opacity:.5;cursor:not-allowed}
+.dv-sos{position:fixed;inset:0;z-index:300;background:linear-gradient(160deg,#450a0a,#7f1d1d);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+.dv-sos-card{width:100%;max-width:440px;text-align:center}
+.dv-sos-card h2{font-size:26px;font-weight:900;margin:8px 0}
+.dv-sos-card p{color:#fecaca;font-size:15px}
+.dv-sos-card small{color:#fca5a5;font-size:12px}
+.dv-sos-status{margin:18px 0 8px;padding:14px;border-radius:14px;background:rgba(0,0,0,.35);font-weight:700;font-size:15px}
+.dv-sos-status.ack{background:rgba(34,197,94,.2);color:#bbf7d0;border:1px solid rgba(34,197,94,.5)}
+.dv-sos-card .dv-btn{margin-top:12px}
+.dv-sos-pulse{display:inline-block;animation:dv-pulse 1.4s ease-in-out infinite}
+@keyframes dv-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
 .dv-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:flex-end;justify-content:center}
 .dv-sheet{background:var(--card);border:1px solid var(--line);border-radius:22px 22px 0 0;width:100%;max-width:520px;max-height:88vh;overflow:auto;padding:20px 18px 28px;animation:dv-up .25s ease}
 .dv-sheet.urgent{border-color:#ef4444;border-width:2px}

@@ -16,6 +16,10 @@ export const BRAND = {
   fleetTitle: 'TETFund Campus Tricycle Fleet',
   fleetSubtitle: 'Fleet portal · Hosted by UniWeb',
 
+  // Campus security's phone number. When set, the driver's SOS screen shows a
+  // one-tap "Call campus security" button. Leave empty to hide it.
+  securityPhone: '' as string,
+
   // File in the frontend's public/ folder. null = no logo (a 🛺 is shown instead)
   logo: '/tetfund-logo.png' as string | null,
 }
