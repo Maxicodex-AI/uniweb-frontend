@@ -111,6 +111,21 @@ const CSS = `
 .tp-root .leaflet-control-attribution{background:rgba(15,23,42,.75);color:#94a3b8}
 .tp-root .leaflet-control-attribution a{color:#cbd5e1}
 
+.tp-rp-overlay{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center}
+.tp-rp{background:#1e293b;color:#fff;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 18px 24px}
+.tp-rp h3{margin:0;font-size:18px;font-weight:800}
+.tp-rp label{display:block;font-size:12px;font-weight:700;color:#94a3b8;margin:14px 0 6px}
+.tp-rp select,.tp-rp textarea{width:100%;background:#0f172a;color:#fff;border:1px solid #334155;border-radius:10px;padding:11px;font:inherit;font-size:14px}
+.tp-rp textarea{min-height:110px;resize:vertical}
+.tp-rp-row{display:flex;gap:8px;flex-wrap:wrap}
+.tp-rp-chip{border:1px solid #334155;background:#0f172a;color:#e2e8f0;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer}
+.tp-rp-chip.on{background:#16a34a;border-color:#16a34a;color:#fff}
+.tp-rp-cat{display:block;width:100%;text-align:left;border:1px solid #334155;background:#0f172a;color:#e2e8f0;border-radius:10px;padding:11px 12px;font-size:14px;margin-bottom:6px;cursor:pointer}
+.tp-rp-cat.on{border-color:#16a34a;background:#14532d}
+.tp-rp-note{font-size:12px;color:#94a3b8;margin-top:10px;line-height:1.5}
+.tp-rp-err{background:#7f1d1d;color:#fecaca;border-radius:10px;padding:10px 12px;font-size:13px;margin-top:12px}
+.tp-rp-tabs{display:flex;gap:8px;margin:12px 0 4px}
+@media (min-width:768px){.tp-rp-overlay{align-items:center}.tp-rp{border-radius:18px}}
 @keyframes tp-up{from{transform:translateY(28px);opacity:0}to{transform:none;opacity:1}}
 @keyframes tp-in{from{transform:translateX(-28px);opacity:0}to{transform:none;opacity:1}}
 @keyframes tp-fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -255,6 +270,148 @@ function makeIcon(L: any, d: any, active: boolean, best: boolean, heading: numbe
   return L.divIcon({ html, className: '', iconSize: [0, 0] })
 }
 
+// ===== Report a problem with a tricycle =====
+const MY_STATUS: Record<string, string> = {
+  new: 'Received', in_review: 'Being reviewed', resolved: 'Resolved', dismissed: 'Closed',
+}
+
+function ReportModal({ initialVehicle, onClose }: { initialVehicle?: string; onClose: () => void }) {
+  const [tab, setTab] = useState<'new' | 'mine'>('new')
+  const [opts, setOpts] = useState<{ categories: { key: string; label: string }[]; vehicles: string[] } | null>(null)
+  const [when, setWhen] = useState('today')
+  const [vehicle, setVehicle] = useState(initialVehicle || '')
+  const [category, setCategory] = useState('')
+  const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [sent, setSent] = useState(false)
+  const [mine, setMine] = useState<any[] | null>(null)
+
+  const headers = () => ({ Authorization: `Bearer ${getAuthToken()}` })
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/complaints/options`, { headers: headers() })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d) setOpts(d) })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (tab !== 'mine') return
+    fetch(`${API_BASE}/api/complaints/mine`, { headers: headers() })
+      .then(r => (r.ok ? r.json() : []))
+      .then(d => setMine(Array.isArray(d) ? d : []))
+      .catch(() => setMine([]))
+  }, [tab, sent])
+
+  const submit = async () => {
+    setError('')
+    if (!category) return setError('Choose what the problem is about')
+    if (message.trim().length < 10) return setError('Please describe what happened (at least 10 characters)')
+    setBusy(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/complaints`, {
+        method: 'POST',
+        headers: { ...headers(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category, when, vehicleNumber: vehicle, message }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.message || 'Could not send your report. Please try again.')
+        return
+      }
+      setSent(true)
+    } catch {
+      setError('No connection. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const tabBtn = (key: 'new' | 'mine', label: string) => (
+    <button className={`tp-rp-chip${tab === key ? ' on' : ''}`} onClick={() => setTab(key)}>{label}</button>
+  )
+
+  return (
+    <div className="tp-rp-overlay" onClick={onClose}>
+      <div className="tp-rp" onClick={e => e.stopPropagation()} role="dialog" aria-label="Report a problem">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3>⚠️ Report a problem</h3>
+          <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 0, color: '#94a3b8', fontSize: 26, cursor: 'pointer' }}>×</button>
+        </div>
+        <div className="tp-rp-tabs">{tabBtn('new', 'New report')}{tabBtn('mine', 'My reports')}</div>
+
+        {tab === 'new' && (sent ? (
+          <div style={{ textAlign: 'center', padding: '26px 6px' }}>
+            <div style={{ fontSize: 46 }}>✅</div>
+            <h3 style={{ margin: '8px 0' }}>Thank you</h3>
+            <p style={{ color: '#cbd5e1', fontSize: 14 }}>Your report has gone to the fleet team. You can follow it under “My reports”.</p>
+            <button className="tp-hbtn" style={{ background: '#16a34a', marginTop: 14, padding: '11px 18px' }} onClick={onClose}>Done</button>
+          </div>
+        ) : (
+          <>
+            <label>When did it happen?</label>
+            <div className="tp-rp-row">
+              {[['today', 'Today'], ['yesterday', 'Yesterday'], ['earlier', 'Earlier']].map(([k, l]) => (
+                <button key={k} className={`tp-rp-chip${when === k ? ' on' : ''}`} onClick={() => setWhen(k)}>{l}</button>
+              ))}
+            </div>
+
+            <label>Which tricycle? (the number is on the tricycle)</label>
+            <select value={vehicle} onChange={e => setVehicle(e.target.value)}>
+              <option value="">I don’t know the number</option>
+              {(opts?.vehicles || []).map(v => <option key={v} value={v}>{v}</option>)}
+            </select>
+
+            <label>What is it about?</label>
+            {(opts?.categories || []).map(c => (
+              <button key={c.key} className={`tp-rp-cat${category === c.key ? ' on' : ''}`} onClick={() => setCategory(c.key)}>{c.label}</button>
+            ))}
+
+            <label>Tell us what happened</label>
+            <textarea maxLength={1000} value={message} onChange={e => setMessage(e.target.value)} placeholder="Describe it in your own words" />
+            <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'right' }}>{message.length}/1000</div>
+
+            {error && <div className="tp-rp-err" role="alert">{error}</div>}
+
+            <button className="tp-hbtn" style={{ background: '#16a34a', width: '100%', marginTop: 14, padding: 13, fontSize: 14 }} disabled={busy} onClick={submit}>
+              {busy ? 'Sending…' : 'Send report'}
+            </button>
+            <p className="tp-rp-note">
+              Only the Fleet Head can see your name, so they can follow up. Drivers are never told who reported them.
+              If someone is in danger right now, call campus security instead.
+            </p>
+          </>
+        ))}
+
+        {tab === 'mine' && (
+          !mine ? (
+            <p style={{ color: '#94a3b8', padding: '20px 0' }}>Loading…</p>
+          ) : mine.length === 0 ? (
+            <p style={{ color: '#94a3b8', padding: '20px 0', textAlign: 'center' }}>You haven’t sent any reports.</p>
+          ) : (
+            mine.map(c => (
+              <div key={c._id} style={{ borderTop: '1px solid #334155', padding: '12px 0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                  <b style={{ fontSize: 14 }}>{c.categoryLabel}{c.vehicleNumber ? ` · ${c.vehicleNumber}` : ''}</b>
+                  <span style={{ fontSize: 12, color: c.status === 'resolved' ? '#4ade80' : '#fbbf24', whiteSpace: 'nowrap' }}>{MY_STATUS[c.status] || c.status}</span>
+                </div>
+                <p style={{ fontSize: 13, color: '#cbd5e1', margin: '4px 0' }}>{c.message}</p>
+                {c.resolution && (
+                  <p style={{ fontSize: 13, color: '#bbf7d0', background: '#14532d', borderRadius: 8, padding: '8px 10px', margin: '6px 0 0' }}>
+                    Reply from the fleet team: {c.resolution}
+                  </p>
+                )}
+                <small style={{ color: '#64748b' }}>{new Date(c.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</small>
+              </div>
+            ))
+          )
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function TransportPage() {
   const { isDark } = useTheme()
 
@@ -269,6 +426,7 @@ export default function TransportPage() {
   const [now, setNow] = useState(Date.now())
   const [alertOn, setAlertOn] = useState(false)
   const [toast, setToast] = useState<{ id: string | null; text: string } | null>(null)
+  const [report, setReport] = useState<null | { vehicle?: string }>(null)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const mapObj = useRef<any>(null)
@@ -986,6 +1144,14 @@ export default function TransportPage() {
                   )}
                 </div>
 
+                <button
+                  className="tp-hbtn"
+                  style={{ background: '#334155', width: '100%', marginBottom: 8, padding: 11 }}
+                  onClick={() => setReport({ vehicle: followed.tricycleNumber })}
+                >
+                  ⚠️ Report a problem with {followed.tricycleNumber}
+                </button>
+
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button
                     onClick={() => { setFollowId(null); setShowList(true) }}
@@ -1107,12 +1273,20 @@ export default function TransportPage() {
                       )
                     })
                   )}
+
+                  <div style={{ padding: '14px 16px' }}>
+                    <button className="tp-hbtn" style={{ background: '#334155' }} onClick={() => setReport({})}>
+                      ⚠️ Report a problem
+                    </button>
+                  </div>
                 </div>
               </>
             )}
           </div>
         </aside>
       </div>
+
+      {report && <ReportModal initialVehicle={report.vehicle} onClose={() => setReport(null)} />}
     </div>
   )
 }

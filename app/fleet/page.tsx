@@ -14,7 +14,7 @@ const TZ = 'Africa/Lagos'
 type Me = {
   actor: { id: string; kind: 'head' | 'superadmin' | 'admin'; name: string; isHead: boolean }
   today: string
-  counts: { pending: number; approved: number; suspended: number; onShift: number; vehicles: number }
+  counts: { pending: number; approved: number; suspended: number; onShift: number; vehicles: number; sos: number; complaints: number }
 }
 type ApiResult = { ok: boolean; status: number; data: any }
 type Api = (path: string, opts?: { method?: string; body?: any }) => Promise<ApiResult>
@@ -191,6 +191,7 @@ function describeAudit(e: any): string {
       const who = x.audience === 'all' ? 'all drivers' : x.audience === 'onShift' ? 'drivers on shift' : 'one driver'
       return `${a} sent “${x.title}” to ${who} (${x.recipients})`
     }
+    case 'complaint.status': return `${a} marked a student report${t ? ` about ${t}` : ''} as ${String(x.status || '').replace('_', ' ')}`
     case 'sos.raise': return `${a} raised an SOS alert${x.vehicle ? ` (${x.vehicle})` : ''}`
     case 'sos.acknowledge': return `${a} acknowledged the SOS from ${t}`
     case 'sos.resolve': return `${a} closed the SOS from ${t}${x.note ? ` — “${x.note}”` : ''}`
@@ -280,6 +281,7 @@ function Overview({ me, api, goTab, version, sosCount }: { me: Me; api: Api; goT
   const c = me.counts
   const cards = [
     { label: 'Active SOS alerts', value: sosCount, tab: 'sos', warn: sosCount > 0 },
+    { label: 'New student reports', value: c.complaints || 0, tab: 'reports', warn: (c.complaints || 0) > 0 },
     { label: 'Waiting for approval', value: c.pending, tab: 'approvals', warn: c.pending > 0 },
     { label: 'On shift now', value: c.onShift, tab: 'live' },
     { label: 'Approved drivers', value: c.approved, tab: 'drivers' },
@@ -998,6 +1000,181 @@ function ActivityTab({ api, version }: any) {
   )
 }
 
+// ===== Tab: Reports (student complaints) =====
+const REPORT_FILTERS: [string, string][] = [['open', 'Open'], ['resolved', 'Resolved'], ['dismissed', 'Dismissed'], ['all', 'All']]
+const REPORT_STATUS: Record<string, string> = { new: 'New', in_review: 'In review', resolved: 'Resolved', dismissed: 'Dismissed' }
+const REPORT_TONE: Record<string, string> = { new: 'bad', in_review: 'warn', resolved: 'ok', dismissed: '' }
+
+function ReportsTab({ api, version, openReport }: any) {
+  const [filter, setFilter] = useState('open')
+  const [q, setQ] = useState('')
+  const [debounced, setDebounced] = useState('')
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(q.trim()), 300)
+    return () => clearTimeout(t)
+  }, [q])
+
+  const params = new URLSearchParams({ filter })
+  if (debounced) params.set('q', debounced)
+  const { data, err } = useLoad(api, `/complaints?${params.toString()}`, version)
+
+  return (
+    <div>
+      <h2 className="fp-h">Student reports</h2>
+      <p className="fp-sub">Problems students have reported about tricycles and drivers. Newest and most serious first.</p>
+      <input className="fp-input" placeholder="Search by tricycle, driver or words in the report…" value={q} onChange={e => setQ(e.target.value)} />
+      <div className="fp-chips">
+        {REPORT_FILTERS.map(([key, label]) => (
+          <button key={key} className={`fp-chip${filter === key ? ' on' : ''}`} onClick={() => setFilter(key)}>{label}</button>
+        ))}
+      </div>
+      {!data ? (
+        <Loading err={err} />
+      ) : data.length === 0 ? (
+        <div className="fp-empty"><i>📭</i>No reports here.</div>
+      ) : (
+        <div className="fp-list">
+          {data.map((c: any) => (
+            <div key={c._id} className="fp-row tap" style={{ alignItems: 'flex-start' }} onClick={() => openReport(c._id)}>
+              <div className="fp-grow">
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+                  {c.priority === 'high' && <span className="fp-pill bad">High priority</span>}
+                  <span className="fp-pill">{c.categoryLabel}</span>
+                  {c.vehicleNumber && <span className="fp-pill">🛺 {c.vehicleNumber}</span>}
+                </div>
+                <div style={{ fontSize: 14 }}>{c.message.length > 110 ? `${c.message.slice(0, 110)}…` : c.message}</div>
+                <div className="fp-meta" style={{ marginTop: 4 }}>
+                  <span>{c.driverName ? `Driver: ${c.driverName}` : 'Driver not identified'}</span>
+                  <span>{ago(c.createdAt)}</span>
+                </div>
+              </div>
+              <span className={`fp-pill ${REPORT_TONE[c.status] || ''}`}>{REPORT_STATUS[c.status] || c.status}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ComplaintDrawer({ id, me, api, say, ask, version, refreshAll, onClose, openDriver }: any) {
+  const [info, setInfo] = useState<any>(null)
+  const [err, setErr] = useState('')
+  const [note, setNote] = useState('')
+
+  useEffect(() => {
+    let alive = true
+    api(`/complaints/${id}`).then((r: ApiResult) => {
+      if (!alive) return
+      if (r.ok) setInfo(r.data)
+      else setErr(r.data?.message || 'Could not load this report')
+    })
+    return () => { alive = false }
+  }, [api, id, version])
+
+  const c = info?.complaint
+  const setStatus = (status: string, resolution?: string) =>
+    api(`/complaints/${id}/status`, { method: 'PUT', body: { status, resolution } }).then(async (r: ApiResult) => {
+      say(r.ok, r.data?.message || 'Could not update')
+      await refreshAll()
+    })
+
+  const addNote = async () => {
+    if (note.trim().length < 2) return
+    const r = await api(`/complaints/${id}/notes`, { method: 'POST', body: { text: note } })
+    say(r.ok, r.data?.message || 'Could not add the note')
+    if (r.ok) { setNote(''); await refreshAll() }
+  }
+
+  return (
+    <Modal title="Student report" onClose={onClose} wide>
+      {!c ? (
+        <Loading err={err} />
+      ) : (
+        <>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <span className={`fp-pill ${REPORT_TONE[c.status] || ''}`}>{REPORT_STATUS[c.status]}</span>
+            {c.priority === 'high' && <span className="fp-pill bad">High priority</span>}
+            <span className="fp-pill">{c.categoryLabel}</span>
+          </div>
+
+          {info.related > 0 && (
+            <div className="fp-card" style={{ marginTop: 12, borderColor: 'var(--bad)' }}>
+              ⚠️ <b>{info.related}</b> other report{info.related === 1 ? '' : 's'} name this driver in the last 90 days.
+            </div>
+          )}
+
+          <dl className="fp-info">
+            <dt>Tricycle</dt><dd>{c.vehicleNumber || 'Not given'}</dd>
+            <dt>Driver</dt>
+            <dd>
+              {c.driverName || 'Not identified'}
+              {c.driver && <button className="fp-btn fp-g fp-s" style={{ marginLeft: 8 }} onClick={() => openDriver(c.driver)}>View driver</button>}
+            </dd>
+            <dt>When</dt><dd>{c.when === 'earlier' ? 'More than a day ago' : c.when === 'yesterday' ? 'Yesterday' : 'Today'} · reported {fmtDateTime(c.createdAt)}</dd>
+            <dt>Reported by</dt>
+            <dd>
+              {c.reporterHidden ? (
+                <span style={{ color: 'var(--mut)', fontWeight: 500 }}>Held by the Fleet Head to protect the student</span>
+              ) : (
+                <>
+                  {c.reporterName}
+                  {c.reporterEmail && <> · <a href={`mailto:${c.reporterEmail}`} style={{ color: 'var(--accent)' }}>{c.reporterEmail}</a></>}
+                  {c.reporterPhone && <> · <a href={`tel:${c.reporterPhone}`} style={{ color: 'var(--accent)' }}>{c.reporterPhone}</a></>}
+                </>
+              )}
+            </dd>
+          </dl>
+
+          <div className="fp-card" style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{c.message}</div>
+
+          {c.resolution && (
+            <p className="fp-sub" style={{ marginTop: 12 }}>
+              <b>Message sent to the reporter:</b> {c.resolution}
+            </p>
+          )}
+
+          <div className="fp-actions" style={{ marginTop: 14 }}>
+            {c.status === 'new' && <button className="fp-btn fp-p" onClick={() => setStatus('in_review')}>Start review</button>}
+            {(c.status === 'new' || c.status === 'in_review') && (
+              <>
+                <button className="fp-btn fp-p" onClick={() => ask({
+                  title: 'Resolve this report?', confirm: 'Resolve', reason: true,
+                  reasonLabel: 'Message to the student (they will see this)',
+                  body: 'Say what was done, for example that the driver has been spoken to.',
+                  onConfirm: (m: string) => setStatus('resolved', m),
+                })}>Resolve</button>
+                <button className="fp-btn fp-g" onClick={() => ask({
+                  title: 'Dismiss this report?', confirm: 'Dismiss', danger: true, reason: true,
+                  reasonLabel: 'Why? (the student will see this)',
+                  onConfirm: (m: string) => setStatus('dismissed', m),
+                })}>Dismiss</button>
+              </>
+            )}
+            {(c.status === 'resolved' || c.status === 'dismissed') && (
+              <button className="fp-btn fp-g" onClick={() => setStatus('in_review')}>Reopen</button>
+            )}
+          </div>
+
+          <h3 className="fp-sec">Internal notes</h3>
+          <p className="fp-sub" style={{ margin: '0 0 8px' }}>Only the fleet team sees these. The student does not.</p>
+          {c.notes?.length > 0 && (
+            <div className="fp-hist">
+              {c.notes.map((n: any) => (
+                <div key={n._id}>{n.text}<small>{n.by?.name} · {fmtDateTime(n.at)}</small></div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <input className="fp-input" placeholder="Add a note, for example “Called the driver at 4pm”" value={note} onChange={e => setNote(e.target.value)} />
+            <button className="fp-btn fp-p" disabled={note.trim().length < 2} onClick={addNote}>Add</button>
+          </div>
+        </>
+      )}
+    </Modal>
+  )
+}
+
 // ===== SOS =====
 const mapUrl = (loc: any) => `https://www.google.com/maps?q=${loc.lat},${loc.lng}`
 
@@ -1132,7 +1309,7 @@ function SosBar({ alerts, goSos, api, say, reload }: any) {
 
 // ===== The portal =====
 const TABS: [string, string, string][] = [
-  ['overview', 'Overview', '📊'], ['sos', 'SOS', '🚨'], ['approvals', 'Approvals', '📝'], ['drivers', 'Drivers', '👥'],
+  ['overview', 'Overview', '📊'], ['sos', 'SOS', '🚨'], ['approvals', 'Approvals', '📝'], ['reports', 'Reports', '📣'], ['drivers', 'Drivers', '👥'],
   ['tricycles', 'Tricycles', '🛺'], ['today', 'Today', '📅'], ['messages', 'Messages', '📢'],
   ['live', 'Live', '📍'], ['activity', 'Activity', '🧾'],
 ]
@@ -1145,6 +1322,7 @@ export default function FleetPortal() {
   const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null)
   const [dialog, setDialog] = useState<DialogCfg | null>(null)
   const [drawerId, setDrawerId] = useState<string | null>(null)
+  const [reportId, setReportId] = useState<string | null>(null)
   const [composeFor, setComposeFor] = useState<{ id: string; name: string } | null>(null)
   const tokenRef = useRef('')
   const [sos, setSos] = useState<{ active: any[]; recent: any[] }>({ active: [], recent: [] })
@@ -1222,6 +1400,10 @@ export default function FleetPortal() {
     socket.on('driverRegistered', (d: any) => { say(true, `New driver application: ${d?.name || 'a driver'}`); bump() })
     socket.on('driverOnline', bump)
     socket.on('driverOffline', bump)
+    socket.on('complaintNew', (c: any) => {
+      say(c?.priority !== 'high', c?.priority === 'high' ? '⚠️ High-priority student report received' : 'New student report received')
+      bump()
+    })
 
     // ----- SOS: live alerts, updates and positions -----
     socket.on('connect', () => { loadSos() }) // also catches up after a dropped connection
@@ -1387,6 +1569,7 @@ export default function FleetPortal() {
             <span>{icon}</span>{label}
             {key === 'approvals' && me.counts.pending > 0 && <span className="fp-badge">{me.counts.pending}</span>}
             {key === 'sos' && sos.active.length > 0 && <span className="fp-badge">{sos.active.length}</span>}
+            {key === 'reports' && me.counts.complaints > 0 && <span className="fp-badge">{me.counts.complaints}</span>}
           </button>
         ))}
       </nav>
@@ -1394,6 +1577,7 @@ export default function FleetPortal() {
       <main className="fp-main">
         {tab === 'overview' && <Overview me={me} api={api} goTab={setTab} version={version} sosCount={sos.active.length} />}
         {tab === 'sos' && <SosTab sos={sos} me={me} api={api} say={say} ask={ask} reload={loadSos} />}
+        {tab === 'reports' && <ReportsTab api={api} version={version} openReport={setReportId} />}
         {tab === 'approvals' && <Approvals api={api} say={say} ask={ask} version={version} refreshAll={refreshAll} openDriver={setDrawerId} />}
         {tab === 'drivers' && <DriversTab api={api} version={version} openDriver={setDrawerId} />}
         {tab === 'tricycles' && <VehiclesTab api={api} say={say} ask={ask} version={version} refreshAll={refreshAll} />}
@@ -1414,6 +1598,20 @@ export default function FleetPortal() {
           refreshAll={refreshAll}
           onClose={() => setDrawerId(null)}
           composeTo={(d: { id: string; name: string }) => { setComposeFor(d); setDrawerId(null); setTab('messages') }}
+        />
+      )}
+
+      {reportId && (
+        <ComplaintDrawer
+          id={reportId}
+          me={me}
+          api={api}
+          say={say}
+          ask={ask}
+          version={version}
+          refreshAll={refreshAll}
+          onClose={() => setReportId(null)}
+          openDriver={(id: string) => { setReportId(null); setDrawerId(id) }}
         />
       )}
 
